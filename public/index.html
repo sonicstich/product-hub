@@ -638,13 +638,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 // ── SPRINT DATA ──────────────────────────────────────────────────────
 // ── SPRINT ANCHOR ────────────────────────────────────────────────────
-// The current sprint is the single source of truth — read live from Notion
-// (/api/current-sprint → Sprints DB row with Status = "Current"). If Notion is
-// unavailable we compute it from this anchor so the hub never breaks. Every
-// other sprint, plus the calendar and milestones, is derived on a 2-week cadence.
-const ANCHOR_NUM = 72;              // anchor sprint number
-const ANCHOR_START = '2026-07-06';  // its Monday start (fallback only; Notion overrides)
-const SPRINT_DAYS = 14;             // sprint length / cadence, in days
+// Sprints run on a fixed 2-week cadence, so the whole schedule is derived from
+// one anchor + today's date — it auto-advances every 2 weeks, no editing needed.
+// Sprint 72 = 6–19 Jul, Sprint 73 = 20 Jul – 2 Aug, and so on.
+// If the cadence ever changes, just update ANCHOR_NUM / ANCHOR_START below.
+const ANCHOR_NUM = 72;              // a known sprint number …
+const ANCHOR_START = '2026-07-06';  // … and its Monday start date
+const SPRINT_DAYS = 14;             // days from one sprint's start to the next
+const SPRINT_SPAN = 13;             // last-day offset: start+13 = Sunday (2 full weeks)
 
 // Bulgarian public holidays (Jun–Dec 2026)
 const HOLIDAYS = new Set([
@@ -703,8 +704,8 @@ function buildMonth(y,m){
   return h+'</tr></table></div>';
 }
 
-// Current sprint computed from the anchor + today — the fallback when Notion is unavailable.
-function fallbackAnchor(){
+// The current sprint, computed from the anchor + today (auto-advances every cadence).
+function currentAnchor(){
   const start=parseDate(ANCHOR_START);
   const k=Math.floor((today-start)/(864e5*SPRINT_DAYS));
   return {num:ANCHOR_NUM+k, start:addDays(start, SPRINT_DAYS*k)};
@@ -729,8 +730,8 @@ function renderSprints(anchor){
     set(addDays(s,15),'publish',num); // Tue following
   });
 
-  // Calendar window: 7 months, starting one month before the current month (rolls automatically)
-  const winStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
+  // Calendar window: current month + 6 ahead (past months drop off automatically)
+  const winStart=new Date(today.getFullYear(), today.getMonth(), 1);
   const winEnd  =new Date(winStart.getFullYear(), winStart.getMonth()+7, 1);
   let calHtml='';
   for(let i=0;i<7;i++){const d=new Date(winStart.getFullYear(), winStart.getMonth()+i, 1); calHtml+=buildMonth(d.getFullYear(), d.getMonth());}
@@ -740,7 +741,7 @@ function renderSprints(anchor){
   let tbody='';
   sprints.forEach(({num,s})=>{
     if(s<winStart||s>=winEnd) return;
-    const end=addDays(s,11), isCur=today>=s&&today<=end;
+    const end=addDays(s,SPRINT_SPAN), isCur=today>=s&&today<=end;
     tbody+=`<tr class="${isCur?'cur':''}">
       <td><strong>Sprint ${num}</strong>${isCur?'<span class="badge bx">Current</span>':''}</td>
       <td>${fmt(s)} — ${fmt(end)}</td>
@@ -753,10 +754,10 @@ function renderSprints(anchor){
   document.getElementById('sprint-tbody').innerHTML=tbody;
 
   // Banner + home cards → current sprint (or next upcoming if we're between sprints)
-  let cur=sprints.find(({s})=>today>=s&&today<=addDays(s,11));
+  let cur=sprints.find(({s})=>today>=s&&today<=addDays(s,SPRINT_SPAN));
   if(!cur) cur=sprints.find(({s})=>s>today);
   if(!cur) return;
-  cur={num:cur.num, s:cur.s, end:addDays(cur.s,11)};
+  cur={num:cur.num, s:cur.s, end:addDays(cur.s,SPRINT_SPAN)};
 
   const info=dInfo[todayKey];
   const sm={testing:'Reg. testing',submit:'Submit for Review',review:'Review in Progress',publish:'Publishing to Stores'};
@@ -798,13 +799,8 @@ function renderSprints(anchor){
     </div>`;
 }
 
-// Render instantly from the computed fallback, then upgrade from Notion if reachable.
-renderSprints(fallbackAnchor());
-fetch('/api/current-sprint').then(r=>r.ok?r.json():null).then(d=>{
-  if(d&&d.current&&d.current.start&&d.current.number){
-    renderSprints({num:d.current.number, start:parseDate(String(d.current.start).slice(0,10))});
-  }
-}).catch(()=>{});
+// Derived entirely from the anchor + today — auto-advances every sprint, no editing.
+renderSprints(currentAnchor());
 
 // ── SIDEBAR ─────────────────────────────────────────────────────────
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
