@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Hub</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F1EB;color:#111827;display:flex;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-width:240px;background:#141210;display:flex;flex-direction:column;transition:width .25s ease,min-width .25s ease;overflow:hidden;z-index:100;flex-shrink:0}
+.sidebar.collapsed{width:64px;min-width:64px}
+
+.sb-brand{display:flex;align-items:center;gap:12px;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.sb-logo{width:32px;height:32px;background:linear-gradient(135deg,#E07532,#C8641C);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-brand-name{color:white;font-weight:700;font-size:15px;white-space:nowrap;transition:opacity .2s;letter-spacing:-.3px}
+.collapsed .sb-brand-name{opacity:0}
+
+.sb-nav{flex:1;padding:12px 8px;overflow:hidden}
+.nav-section{margin-bottom:4px}
+.nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.3);padding:8px 10px 4px;white-space:nowrap;transition:opacity .2s}
+.collapsed .nav-section-label{opacity:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13.5px;font-weight:500;transition:background .15s,color .15s;white-space:nowrap;overflow:hidden;user-select:none;margin-bottom:1px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(255,255,255,.14);color:white}
+.nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-label{transition:opacity .2s;overflow:hidden}
+.collapsed .nav-label{opacity:0}
+.collapsed .nav-item{justify-content:center;padding:10px}
+
+.sb-footer{padding:12px 8px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.toggle-btn{width:100%;height:36px;background:rgba(255,255,255,.07);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);transition:background .15s,color .15s}
+.toggle-btn:hover{background:rgba(255,255,255,.14);color:white}
+.toggle-btn svg{transition:transform .25s}
+.collapsed .toggle-btn svg{transform:rotate(180deg)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{background:white;border-bottom:1px solid #EDE8DC;padding:0 28px;height:52px;display:flex;align-items:center;flex-shrink:0}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:#9ca3af}
+.breadcrumb .cur{color:#374151;font-weight:500}
+
+.pages{flex:1;overflow-y:auto}
+.page{display:none;padding:32px 28px;max-width:1080px}
+.page.active{display:block}
+
+/* ── HOME ── */
+.hero{background:linear-gradient(135deg,#141210 0%,#251E15 60%,#3D2A14 100%);border-radius:16px;padding:44px 40px;color:white;margin-bottom:28px}
+.hero .eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;opacity:.55;margin-bottom:10px}
+.hero h1{font-size:34px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px;line-height:1.15}
+.hero p{font-size:15px;opacity:.72;max-width:540px;line-height:1.65}
+
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.stat-card:hover{box-shadow:0 4px 20px rgba(20,18,16,.10),0 1px 4px rgba(20,18,16,.06);transform:translateY(-2px)}
+.sc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:12px}
+.sc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:5px}
+.sc-value{font-size:19px;font-weight:700;color:#1f2937;margin-bottom:3px}
+.sc-sub{font-size:12px;color:#6b7280}
+
+.two-col{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
+.card h3{font-size:13px;font-weight:700;color:#1f2937;margin-bottom:16px;text-transform:uppercase;letter-spacing:.4px}
+.about-text{font-size:14px;color:#6b7280;line-height:1.7}
+.about-text p{margin-bottom:10px}
+.about-text p:last-child{margin-bottom:0}
+.flow-steps{display:flex;flex-direction:column;gap:0;margin-top:14px}
+.flow-step{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid #f3f4f6}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.flow-step .fl-title{font-size:13px;font-weight:600;color:#1f2937}
+.flow-step .fl-sub{font-size:12px;color:#9ca3af}
+
+.qlinks{display:flex;flex-direction:column;gap:8px}
+.ql{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500;color:#374151;transition:all .15s}
+.ql:hover{border-color:#E07532;color:#E07532;background:#FDF6EE}
+.ql-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+/* ── CALENDAR ── */
+.sprint-banner{background:linear-gradient(135deg,#1A1612,#2D2420);color:white;border-radius:12px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.sb-item .lbl{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.5px}
+.sb-item .val{font-size:14px;font-weight:600;margin-top:2px}
+.sb-sep{width:1px;height:38px;background:rgba(255,255,255,.2);flex-shrink:0}
+
+.legend{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:13px 20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.lg-title{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px}
+.lg-item{display:flex;align-items:center;gap:7px;font-size:13px;color:#374151}
+.lg-chip{width:22px;height:22px;border-radius:5px;flex-shrink:0}
+
+/* months */
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(278px,1fr));gap:16px;margin-bottom:28px}
+.month-card{background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+.month-name{padding:11px 16px;font-size:14px;font-weight:700;color:#1f2937;background:#f9fafb;border-bottom:1px solid #e5e7eb}
+
+/* calendar cells */
+.cal-t{width:100%;border-collapse:collapse}
+.cal-t th{text-align:center;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;padding:7px 1px 4px;letter-spacing:.2px}
+.cal-t td{padding:2px;text-align:center}
+.day{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:12.5px;color:#374151;position:relative}
+.day.empty{visibility:hidden}
+.day.wknd{background:#fff1f2;color:#e11d48}
+.day.holiday{background:#fff1f2;color:#e11d48}
+.day.today::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
+
+/* event types */
+.day.d-testing{background:#dbeafe;color:#1d4ed8;font-weight:700;outline:2px solid #60a5fa;outline-offset:-2px}
+.day.d-submit {background:#ffedd5;color:#c2410c;font-weight:700;outline:2px solid #fb923c;outline-offset:-2px}
+.day.d-review {background:#fef9c3;color:#854d0e;font-weight:700;outline:2px solid #fbbf24;outline-offset:-2px}
+.day.d-publish{background:#dcfce7;color:#15803d;font-weight:700;outline:2px solid #4ade80;outline-offset:-2px}
+
+/* sprint table */
+.sec-title{font-size:15px;font-weight:700;color:#1f2937;margin-bottom:14px}
+.sp-table-wrap{overflow-x:auto;margin-bottom:32px}
+.sp-table{width:100%;border-collapse:collapse;background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;min-width:680px}
+.sp-table th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;background:#f9fafb;border-bottom:1px solid #e5e7eb;white-space:nowrap}
+.sp-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f3f4f6;vertical-align:middle;white-space:nowrap}
+.sp-table tr:last-child td{border-bottom:none}
+.sp-table tr.cur td{background:#FEF3E8}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.bt{background:#dbeafe;color:#1d4ed8}
+.bs{background:#ffedd5;color:#c2410c}
+.bv{background:#fef9c3;color:#854d0e}
+.bp{background:#dcfce7;color:#15803d}
+.bx{background:#E07532;color:white;margin-left:6px;font-size:10px;letter-spacing:.2px}
+
+/* ── INCIDENT FORM ── */
+.form-wrap{max-width:560px}
+.form-card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:32px}
+.fh{margin-bottom:24px}
+.fh h2{font-size:20px;font-weight:700}
+.fh p{font-size:14px;color:#6b7280;margin-top:4px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
+.req{color:#ef4444;margin-left:2px}
+.inp,.txa,.sel{width:100%;padding:9px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s;background:white}
+.inp:focus,.txa:focus,.sel:focus{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.txa{resize:vertical;min-height:88px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:flex;align-items:center;gap:5px;padding:6px 13px;border:1.5px solid #e5e7eb;border-radius:20px;cursor:pointer;font-size:13px;color:#374151;transition:all .15s;user-select:none}
+.chip:hover{border-color:#E07532;color:#E07532}
+.chip input{display:none}
+.chip.sel{background:rgba(224,117,50,.12);border-color:#E07532;color:#E07532;font-weight:600}
+.btn-sub{width:100%;padding:12px;background:#E07532;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s;margin-top:6px}
+.btn-sub:hover{background:#C8641C}
+.success{display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:32px;text-align:center}
+.success .ico{font-size:44px;margin-bottom:10px}
+.success h3{font-size:18px;font-weight:700;color:#15803d;margin-bottom:5px}
+.success p{font-size:14px;color:#4b7261}
+.btn-again{background:none;border:1.5px solid #15803d;color:#15803d;padding:9px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
+.btn-again:hover{background:#f0fdf4}
+
+/* ── TASK FORM ── */
+.prio-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.prio-lbl{position:relative;cursor:pointer;display:inline-flex}
+.prio-lbl input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+.prio-lbl span{display:inline-flex;align-items:center;padding:7px 16px;border-radius:8px;border:1.5px solid #e5e7eb;font-size:13px;font-weight:500;color:#9ca3af;background:white;transition:all .15s;user-select:none}
+.prio-lbl span:hover{border-color:#E07532;color:#E07532}
+.prio-lbl input:checked+.p-low{border-color:#6b7280;background:#f3f4f6;color:#374151}
+.prio-lbl input:checked+.p-medium{border-color:#E07532;background:rgba(224,117,50,.10);color:#E07532}
+.prio-lbl input:checked+.p-high{border-color:#ea580c;background:#fff7ed;color:#ea580c}
+.prio-lbl input:checked+.p-critical{border-color:#dc2626;background:#fef2f2;color:#dc2626;font-weight:700}
+.critical-box{display:none;margin-top:10px;padding:12px 14px;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:8px;animation:fadeIn .15s ease}
+.critical-box.show{display:block}
+.critical-box label{color:#b91c1c!important}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.area-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.area-lbl{cursor:pointer;display:inline-flex}
+.area-lbl input{position:absolute;opacity:0;width:0;height:0}
+.area-lbl span{display:inline-flex;align-items:center;padding:5px 13px;border-radius:20px;border:1.5px solid #e5e7eb;font-size:12.5px;font-weight:500;color:#6b7280;background:white;transition:all .15s;user-select:none}
+.area-lbl span:hover{border-color:#E07532;color:#E07532;background:#FDF5EE}
+.area-lbl input:checked+span{border-color:#E07532;background:rgba(224,117,50,.10);color:#E07532;font-weight:600}
+
+/* ── CUSTOM DATE PICKER ── */
+.dp-wrap{position:relative}
+.dp-trigger{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;transition:border-color .15s,box-shadow .15s;user-select:none}
+.dp-wrap:hover .dp-trigger,.dp-trigger.open{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.08)}
+.dp-trigger-main{font-size:14px;font-weight:600;color:#111827}
+.dp-trigger-sub{font-size:11.5px;color:#9ca3af;margin-top:2px}
+.dp-popup{position:absolute;top:calc(100% + 8px);left:0;z-index:300;background:white;border:1.5px solid #e8e5e0;border-radius:14px;padding:16px 14px 14px;box-shadow:0 16px 48px rgba(20,18,16,.14),0 2px 8px rgba(20,18,16,.06);width:294px;animation:dpIn .13s ease}
+@keyframes dpIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dp-ml{font-size:14px;font-weight:700;color:#1f2937;letter-spacing:-.2px}
+.dp-nb{width:30px;height:30px;border-radius:8px;border:1.5px solid #e5e7eb;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#374151;transition:all .15s;flex-shrink:0}
+.dp-nb:hover{border-color:#E07532;color:#E07532;background:#FEF6EE}
+.dp-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dp-dh{text-align:center;font-size:10px;font-weight:700;color:#c4c9d0;padding:2px 0 8px;letter-spacing:.3px}
+.dp-d{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:12.5px;color:#374151;cursor:pointer;margin:0 auto;position:relative;transition:background .1s,color .1s;user-select:none}
+.dp-d.wk{color:#e11d48}
+.dp-d.td{font-weight:700}
+.dp-d.td::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#ef4444}
+.dp-d.s{background:#E07532!important;color:white!important;font-weight:700}
+.dp-d.s::after{display:none}
+.dp-d.off{color:#d1d5db!important;cursor:default;background:none!important}
+.dp-d:not(.off):not(.s):not(.dp-em):hover{background:#f5ede4;color:#111827}
+.dp-em{cursor:default!important}
+.date-note{font-size:12px;color:#9ca3af;margin-top:6px;display:flex;align-items:center;gap:5px}
+
+/* ── OTHER AREA ── */
+.other-area-field{display:none;margin-top:8px}
+.other-area-field.show{display:block;animation:fadeIn .15s ease}
+
+/* ── METRIC HINTS ── */
+.metric-hints{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.metric-hint{padding:4px 10px;border-radius:14px;font-size:11.5px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;cursor:pointer;transition:all .15s;user-select:none}
+.metric-hint:hover{background:#dcfce7;border-color:#4ade80}
+
+/* ── MOCKUP UPLOAD ── */
+.mockup-wrap{border:1.5px dashed #d1d5db;border-radius:10px;padding:16px;background:white;transition:all .15s}
+.mockup-wrap:hover{border-color:#E0A070;background:#FDFAF5}
+.mockup-file-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:7px;border:1.5px solid #e5e7eb;background:white;font-size:13px;font-weight:500;color:#374151;cursor:pointer;transition:all .15s;user-select:none}
+.mockup-file-btn:hover{border-color:#E07532;color:#E07532}
+.mockup-file-list{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.mockup-file-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f9fafb;border-radius:7px;font-size:12.5px;color:#374151;border:1px solid #f3f4f6}
+.mockup-remove{margin-left:auto;cursor:pointer;color:#9ca3af;font-size:11px;border:none;background:none;padding:0 4px;line-height:1;flex-shrink:0}
+.mockup-remove:hover{color:#ef4444}
+.mockup-divider{display:flex;align-items:center;gap:8px;margin:12px 0;color:#9ca3af;font-size:12px}
+.mockup-divider::before,.mockup-divider::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+/* ── BOARD ── */
+#page-board{max-width:none}
+.board-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.board-hdr h2{font-size:20px;font-weight:700;color:#1f2937}
+.board-hdr p{font-size:13px;color:#9ca3af;margin-top:3px}
+.btn-refresh{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1.5px solid #e5e7eb;background:white;font-size:13px;font-weight:500;color:#374151;cursor:pointer;transition:all .15s;font-family:inherit;flex-shrink:0}
+.btn-refresh:hover{border-color:#E07532;color:#E07532}
+.btn-refresh svg{transition:transform .3s}
+.btn-refresh.spinning svg{animation:bspin .8s linear infinite}
+@keyframes bspin{to{transform:rotate(360deg)}}
+.board-outer{overflow-x:auto;padding-bottom:20px}
+.board{display:flex;gap:14px;align-items:flex-start;min-width:max-content;padding:2px}
+.board-col{width:272px;flex-shrink:0}
+.col-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px 10px 0 0;background:white;border:1.5px solid #e5e7eb;border-bottom:3px solid var(--cc);margin-bottom:6px}
+.col-name{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--cc)}
+.col-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;font-size:11px;font-weight:700;background:var(--cc);color:white;opacity:.9}
+.tc-wrap{display:flex;flex-direction:column;gap:8px;min-height:56px}
+.task-card{background:white;border:1.5px solid #e5e7eb;border-radius:10px;padding:13px 14px;cursor:pointer;transition:box-shadow .15s,transform .1s,border-color .15s;text-decoration:none;display:block;color:inherit}
+.task-card:hover{box-shadow:0 4px 16px rgba(20,18,16,.10);transform:translateY(-1px);border-color:#d0c8be}
+.tc-title{font-size:13.5px;font-weight:600;color:#1f2937;line-height:1.45;margin-bottom:9px}
+.tc-areas{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px}
+.tc-area{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:500}
+.tc-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.tc-due{font-size:11.5px;display:flex;align-items:center;gap:4px}
+.tc-prio{padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600}
+.col-empty{padding:22px 16px;text-align:center;font-size:12.5px;color:#c4c9d0;border:1.5px dashed #e8e5e0;border-radius:10px;background:#faf9f7;line-height:1.5}
+.board-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:72px 32px;text-align:center;color:#9ca3af;font-size:14px;line-height:1.6}
+.board-msg strong{color:#374151;font-size:16px;display:block}
+
+@media(max-width:700px){
+  .page{padding:20px 16px}
+  .cards3{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+  .row2{grid-template-columns:1fr}
+  .sb-sep{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    </div>
+    <span class="sb-brand-name">Product Hub</span>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-section">
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-item active" id="nav-home" onclick="go('home',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <span class="nav-label">Home</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Planning</div>
+      <div class="nav-item" id="nav-calendar" onclick="go('calendar',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <span class="nav-label">Release Calendar</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav-item" id="nav-task" onclick="go('task',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+        <span class="nav-label">Create Task</span>
+      </div>
+      <div class="nav-item" id="nav-incident" onclick="go('incident',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <span class="nav-label">Report Incident</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Analytics</div>
+      <div class="nav-item" onclick="window.open('https://metabase.cuspwealth.com/','_blank')">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg></div>
+        <span class="nav-label">Metabase</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </div>
+      <div class="nav-item" onclick="window.open('https://app.amplitude.com/login/artesia-solutions-884543?next=%2Fanalytics%2Fartesia-solutions-884543%2Fproject%2F699935%2Fsearch%2Famplitude_id%253D1597584241358%2Factivity%3F_source%3Duser%2520lookup','_blank')">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <span class="nav-label">Amplitude</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Documentation</div>
+      <div class="nav-item" onclick="window.open('https://www.notion.so/Manual-bank-transfer-36ba512e261980909f11f5695b0c3ff1','_blank')">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+        <span class="nav-label">Manual Bank Transfer</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </div>
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <button class="toggle-btn" onclick="toggleSidebar()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">
+      <span>Product Hub</span>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span class="cur" id="bc">Home</span>
+    </div>
+  </div>
+
+  <div class="pages">
+
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div class="hero">
+        <div class="eyebrow">Product Team · 2026</div>
+        <h1>Product Hub</h1>
+        <p>Your team's central source of truth — release schedules, incident reporting, and everything the team needs in one place.</p>
+      </div>
+
+      <div class="cards3" id="home-cards">
+        <div class="stat-card"><div class="sc-icon" style="background:#e0e7ff">⏳</div><div class="sc-label">Current Sprint</div><div class="sc-value">Loading…</div></div>
+        <div class="stat-card"><div class="sc-icon" style="background:#dbeafe">🧪</div><div class="sc-label">Next Reg. Testing</div><div class="sc-value">Loading…</div></div>
+        <div class="stat-card"><div class="sc-icon" style="background:#dcfce7">🚀</div><div class="sc-label">Next Publish Date</div><div class="sc-value">Loading…</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>About this space</h3>
+          <div class="about-text">
+            <p>Product Hub keeps the whole team aligned on release schedules and production issues — no need to chase people in Slack or dig through old messages.</p>
+            <p>Use <strong>Release Calendar</strong> to see upcoming sprint milestones. Use <strong>Report Incident</strong> to log a production issue with full context.</p>
+          </div>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <div class="flow-dot" style="background:rgba(224,117,50,.12)">🏃</div>
+              <div><div class="fl-title">Sprint Work — Mon–Tue (week 2)</div><div class="fl-sub">~1.5 weeks of development</div></div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-dot" style="background:#dbeafe">🧪</div>
+              <div><div class="fl-title">App Testing — Wednesday</div><div class="fl-sub">QA runs full regression on the build</div></div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-dot" style="background:#ffedd5">📤</div>
+              <div><div class="fl-title">Submit for Review — Thursday</div><div class="fl-sub">Build submitted to App Store &amp; Google Play</div></div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-dot" style="background:#fef9c3">⏳</div>
+              <div><div class="fl-title">Review in Progress — Fri &amp; Mon</div><div class="fl-sub">Waiting on Apple / Google review</div></div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-dot" style="background:#dcfce7">🚀</div>
+              <div><div class="fl-title">Published — Tuesday</div><div class="fl-sub">App goes live on App Store &amp; Google Play</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Quick Actions</h3>
+          <div class="qlinks">
+            <div class="ql" onclick="go('calendar',document.getElementById('nav-calendar'))">
+              <div class="ql-icon" style="background:#dbeafe">📅</div>
+              View Release Calendar
+            </div>
+            <div class="ql" onclick="go('incident',document.getElementById('nav-incident'))">
+              <div class="ql-icon" style="background:#fee2e2">🚨</div>
+              Report an Incident
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="page-calendar" class="page">
+      <div class="sprint-banner" id="banner"></div>
+
+      <div class="legend">
+        <span class="lg-title">Legend:</span>
+        <div class="lg-item"><div class="lg-chip" style="background:#dbeafe;outline:2px solid #60a5fa;outline-offset:-2px"></div>Reg. testing</div>
+        <div class="lg-item"><div class="lg-chip" style="background:#ffedd5;outline:2px solid #fb923c;outline-offset:-2px"></div>Submit for Review</div>
+        <div class="lg-item"><div class="lg-chip" style="background:#fef9c3;outline:2px solid #fbbf24;outline-offset:-2px"></div>Review in Progress</div>
+        <div class="lg-item"><div class="lg-chip" style="background:#dcfce7;outline:2px solid #4ade80;outline-offset:-2px"></div>Published to Stores</div>
+        <div class="lg-item"><div class="lg-chip" style="background:#fff1f2;outline:1px solid #fca5a5;outline-offset:-1px"></div>Public holiday</div>
+        <div class="lg-item"><div style="width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2);flex-shrink:0"></div>Today</div>
+      </div>
+
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <div class="sec-title">All Sprints — 2026</div>
+      <div class="sp-table-wrap">
+        <table class="sp-table">
+          <thead><tr>
+            <th>Sprint</th><th>Period</th><th>Testing (Wed)</th><th>Submit (Thu)</th><th>Review (Fri–Mon)</th><th>Publish (Tue)</th>
+          </tr></thead>
+          <tbody id="sprint-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INCIDENT -->
+    <div id="page-incident" class="page">
+      <div class="form-wrap">
+        <div class="form-card">
+          <div class="fh"><h2>Report an Incident</h2><p>Submit this form to notify the team immediately</p></div>
+          <form id="inc-form" onsubmit="handleSubmit(event)">
+            <div class="field">
+              <label>Incident title<span class="req">*</span></label>
+              <input class="inp" type="text" placeholder="Short description: what broke?" required>
+            </div>
+            <div class="field">
+              <label>Description<span class="req">*</span></label>
+              <textarea class="txa" placeholder="What happened? How to reproduce? What is not working?" required></textarea>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label>Date of incident<span class="req">*</span></label>
+                <div class="dp-wrap" id="dp-wrap-inc">
+                  <div class="dp-trigger" id="dp-trig-inc" onclick="dpToggle('inc');event.stopPropagation()">
+                    <span style="font-size:18px;line-height:1;flex-shrink:0">📅</span>
+                    <div style="flex:1"><div class="dp-trigger-main" id="dp-main-inc">—</div></div>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <input type="hidden" id="inc-date">
+                  <div class="dp-popup" id="dp-popup-inc" style="display:none"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Affected users</label>
+                <input class="inp" type="number" placeholder="~0" min="0">
+              </div>
+            </div>
+            <div class="field">
+              <label>Priority<span class="req">*</span></label>
+              <select class="sel" required>
+                <option value="">Select priority...</option>
+                <option>🔴 Critical — service is down</option>
+                <option>🟠 High — core flow is broken</option>
+                <option>🟡 Medium — partial malfunction</option>
+                <option>🟢 Low — cosmetic / minor issue</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Related to<span class="req">*</span></label>
+              <div class="chips">
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Trading</label>
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Deposits</label>
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Withdrawals</label>
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Authorization</label>
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this)">KYC</label>
+                <label class="chip"><input type="checkbox" onchange="toggleChip(this);toggleOther(this)">Other</label>
+              </div>
+            </div>
+            <div class="field" id="other-field" style="display:none">
+              <label>Specify area</label>
+              <input class="inp" type="text" placeholder="e.g. push notifications, user profile...">
+            </div>
+            <button type="submit" class="btn-sub">Submit Incident Report</button>
+          </form>
+          <div class="success" id="success-box">
+            <div class="ico">✅</div>
+            <h3>Incident recorded</h3>
+            <p>The team has been notified. Thank you for the report!</p>
+            <button class="btn-again" onclick="resetForm()">Report another incident</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATE TASK -->
+    <div id="page-task" class="page">
+      <div class="ph"><h2>Create Task</h2><p>New tasks land in the <strong>New</strong> column on the <a href="https://app.notion.com/p/102bba654d624b6bbd995720f8b245ba" target="_blank" style="color:#E07532">Notion board</a>.</p></div>
+      <div class="two-col">
+        <div class="card">
+          <form id="task-form" onsubmit="createTask(event)">
+
+            <div class="field">
+              <label>Task title<span class="req">*</span></label>
+              <input class="inp" id="task-title" type="text" placeholder="What needs to be done?" required>
+            </div>
+
+            <div class="field">
+              <label>Why does this need to be done?<span class="req">*</span></label>
+              <textarea class="inp" id="task-why" rows="5" placeholder="Describe the user problem, business context, or constraint that explains the value of this task. What happens if we don't do it?" required></textarea>
+            </div>
+
+            <div class="field">
+              <label>What metric will this impact?</label>
+              <textarea class="inp" id="task-metric" rows="2" placeholder="e.g. Raise deposit conversion by 15%, reduce KYC drop-off, improve onboarding completion rate…"></textarea>
+              <div class="metric-hints">
+                <span class="metric-hint" onclick="appendMetric('Raise conversion rate')">↑ Conversion rate</span>
+                <span class="metric-hint" onclick="appendMetric('Reduce drop-off')">↓ Drop-off</span>
+                <span class="metric-hint" onclick="appendMetric('Improve client experience')">★ Client experience</span>
+                <span class="metric-hint" onclick="appendMetric('Reduce time to complete')">⏱ Time to complete</span>
+                <span class="metric-hint" onclick="appendMetric('Increase retention')">↑ Retention</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Priority</label>
+              <div class="prio-group">
+                <label class="prio-lbl"><input type="radio" name="priority" value="Low"><span class="p-low">Low</span></label>
+                <label class="prio-lbl"><input type="radio" name="priority" value="Medium" checked><span class="p-medium">Medium</span></label>
+                <label class="prio-lbl"><input type="radio" name="priority" value="High"><span class="p-high">High</span></label>
+                <label class="prio-lbl"><input type="radio" name="priority" value="Critical"><span class="p-critical">🔴 Critical</span></label>
+              </div>
+              <div class="critical-box" id="critical-box">
+                <label>What makes this Critical?<span class="req">*</span></label>
+                <textarea class="inp" id="task-critical" rows="2" placeholder="e.g. Blocking the release, production incident, legal deadline…" style="margin-top:6px"></textarea>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Due date<span class="req">*</span></label>
+              <div class="dp-wrap" id="dp-wrap-due">
+                <div class="dp-trigger" id="dp-trig-due" onclick="dpToggle('due');event.stopPropagation()">
+                  <span style="font-size:20px;line-height:1;flex-shrink:0">📅</span>
+                  <div style="flex:1;min-width:0">
+                    <div class="dp-trigger-main" id="due-text-main">—</div>
+                    <div class="dp-trigger-sub" id="due-text-sub">Loading…</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <input type="hidden" id="task-due">
+                <div class="dp-popup" id="dp-popup-due" style="display:none"></div>
+              </div>
+              <div class="date-note">🔒 Minimum 3 weeks from today — no last-minute requests.</div>
+            </div>
+
+            <div class="field">
+              <label>Affected areas</label>
+              <div class="area-chips">
+                <label class="area-lbl"><input type="checkbox" value="Authorization"><span>Authorization</span></label>
+                <label class="area-lbl"><input type="checkbox" value="KYC"><span>KYC</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Calls"><span>Calls</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Deposits"><span>Deposits</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Withdrawals"><span>Withdrawals</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Onboarding"><span>Onboarding</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Portfolio"><span>Portfolio</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Trading"><span>Trading</span></label>
+                <label class="area-lbl"><input type="checkbox" value="Other" onchange="toggleOtherArea(this)"><span>Other</span></label>
+              </div>
+              <div class="other-area-field" id="other-area-field">
+                <input class="inp" type="text" id="other-area-text" placeholder="Specify the area…">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Mockups &amp; links</label>
+              <div class="mockup-wrap">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <label class="mockup-file-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Attach files
+                    <input type="file" id="mockup-files" style="display:none" multiple accept="image/*,.pdf,.sketch,.fig" onchange="handleMockupFiles(this)">
+                  </label>
+                  <span style="font-size:12px;color:#9ca3af">PNG, JPG, PDF, Figma, Sketch</span>
+                </div>
+                <div class="mockup-file-list" id="mockup-file-list"></div>
+                <div class="mockup-divider">or paste a link</div>
+                <input class="inp" type="text" id="mockup-link" placeholder="Figma, Confluence, Google Drive, Notion…" style="margin-top:0">
+              </div>
+            </div>
+
+            <button type="submit" class="btn-sub" id="task-submit-btn" style="margin-top:8px">Add to Notion</button>
+          </form>
+
+          <div class="success" id="task-success" style="display:none">
+            <div class="ico">✅</div>
+            <h3>Task created!</h3>
+            <p>Added to the Notion board in <strong>New</strong> status.</p>
+            <a id="task-notion-link" href="#" target="_blank" class="btn-sub" style="display:inline-block;text-decoration:none;margin-bottom:8px;margin-top:14px">Open in Notion →</a><br>
+            <button class="btn-again" onclick="resetTaskForm()">Create another task</button>
+          </div>
+          <div class="success" id="task-error" style="display:none;background:#fef2f2;border-color:#fca5a5">
+            <div class="ico">⚠️</div>
+            <h3 style="color:#b91c1c">Error</h3>
+            <p id="task-error-msg" style="color:#991b1b"></p>
+            <button class="btn-again" onclick="document.getElementById('task-error').style.display='none';document.getElementById('task-form').style.display='block'" style="border-color:#b91c1c;color:#b91c1c">Try again</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Task flow</h3>
+          <div class="flow-steps">
+            <div class="flow-step"><div class="flow-dot" style="background:#dbeafe">🆕</div><div><div class="fl-title">New</div><div class="fl-sub">Just added, waiting to be picked up</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:#fef9c3">🔍</div><div><div class="fl-title">Analysis</div><div class="fl-sub">Requirements, scope, edge cases</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:rgba(224,117,50,.12)">🎨</div><div><div class="fl-title">Design</div><div class="fl-sub">UX/UI design &amp; prototyping</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:#ffedd5">📄</div><div><div class="fl-title">Documentation</div><div class="fl-sub">Spec written, ready to hand off</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:#dcfce7">✅</div><div><div class="fl-title">Ready for Development</div><div class="fl-sub">Groomed, estimated, prioritised</div></div></div>
+          </div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Areas</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#dbeafe;color:#1e40af">Authorization</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#dcfce7;color:#166534">KYC</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#f3f4f6;color:#374151">Calls</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#fef9c3;color:#854d0e">Deposits</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#ffedd5;color:#9a3412">Withdrawals</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:rgba(224,117,50,.12);color:#6b21a8">Onboarding</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#fce7f3;color:#9d174d">Portfolio</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#fef2f2;color:#991b1b">Trading</span>
+              <span style="padding:3px 9px;border-radius:12px;font-size:11.5px;background:#f9fafb;color:#6b7280">Other</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<script>
+// ── SPRINT DATA ──────────────────────────────────────────────────────
+const SPRINT_STARTS = [
+  '2026-06-08','2026-06-22','2026-07-06','2026-07-20',
+  '2026-08-03','2026-08-17','2026-08-31','2026-09-14',
+  '2026-09-28','2026-10-12','2026-10-26','2026-11-09',
+  '2026-11-23','2026-12-07'
+];
+const SPRINT_BASE = 71;
+
+// Bulgarian public holidays (Jun–Dec 2026)
+const HOLIDAYS = new Set([
+  '2026-09-06', // Съединение (Sun)
+  '2026-09-07', // Съединение — observed Mon
+  '2026-09-22', // Независимост
+  '2026-11-01', // Ден на народните будители (Sun)
+  '2026-11-02', // Ден на народните будители — observed Mon
+  '2026-12-24', // Бъдни вечер
+  '2026-12-25', // Рождество Христово
+  '2026-12-26', // Рождество Христово (Sat)
+  '2026-12-28', // Рождество — observed Mon
+]);
+
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+// Use local date to avoid UTC offset drift in UTC+ timezones
+function toKey(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseDate(str){const[y,m,d]=str.split('-').map(Number);return new Date(y,m-1,d);}
+
+// Event priority: publish > review > submit > testing
+const PRIO = {publish:4, review:3, submit:2, testing:1};
+const dInfo = {};
+
+SPRINT_STARTS.forEach((start,idx)=>{
+  const s=parseDate(start), num=SPRINT_BASE+idx;
+  const set=(d,type)=>{
+    const k=toKey(d);
+    if(!dInfo[k]||PRIO[type]>PRIO[dInfo[k].type]) dInfo[k]={type,sprint:num};
+  };
+  set(addDays(s, 9), 'testing');  // Wed week 2
+  set(addDays(s,10), 'submit');   // Thu week 2
+  set(addDays(s,11), 'review');   // Fri week 2
+  set(addDays(s,14), 'review');   // Mon following
+  set(addDays(s,15), 'publish');  // Tue following
+});
+
+// ── CALENDAR ────────────────────────────────────────────────────────
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Unambiguous 2-char day headers: Mo Tu We Th Fr Sa Su
+const DN=['Mo','Tu','We','Th','Fr','Sa','Su'];
+const todayKey=toKey(new Date());
+
+function buildMonth(y,m){
+  const first=new Date(y,m,1), last=new Date(y,m+1,0);
+  let d0=first.getDay(); d0=d0===0?6:d0-1; // Mon=0
+  let h=`<div class="month-card"><div class="month-name">${MN[m]} ${y}</div>
+  <table class="cal-t"><tr>${DN.map(d=>`<th>${d}</th>`).join('')}</tr><tr>`;
+  for(let i=0;i<d0;i++) h+=`<td><div class="day empty"></div></td>`;
+  for(let d=1;d<=last.getDate();d++){
+    const date=new Date(y,m,d);
+    const dow=date.getDay()===0?6:date.getDay()-1; // Mon=0..Sun=6
+    const key=toKey(date), info=dInfo[key], isToday=key===todayKey;
+    let cls='day';
+    if(isToday) cls+=' today';
+    if(info) cls+=' d-'+info.type;
+    else if(!isToday&&HOLIDAYS.has(key)) cls+=' holiday';
+    else if(!isToday&&dow>=5) cls+=' wknd';
+    h+=`<td><div class="${cls}">${d}</div></td>`;
+    if(dow===6&&d<last.getDate()) h+='</tr><tr>';
+  }
+  const ld=last.getDay()===0?6:last.getDay()-1;
+  for(let i=ld+1;i<7;i++) h+=`<td><div class="day empty"></div></td>`;
+  return h+'</tr></table></div>';
+}
+let calHtml='';
+for(let m=5;m<=11;m++) calHtml+=buildMonth(2026,m);
+document.getElementById('cal-grid').innerHTML=calHtml;
+
+// ── SPRINT TABLE ────────────────────────────────────────────────────
+function fmt(d){return `${d.getDate()} ${MS[d.getMonth()]}`;}
+const today=new Date(); today.setHours(0,0,0,0);
+
+let tbody='';
+SPRINT_STARTS.forEach((start,idx)=>{
+  const s=parseDate(start), num=SPRINT_BASE+idx, end=addDays(s,11);
+  const isCur=today>=s&&today<=end;
+  tbody+=`<tr class="${isCur?'cur':''}">
+    <td><strong>Sprint ${num}</strong>${isCur?'<span class="badge bx">Current</span>':''}</td>
+    <td>${fmt(s)} — ${fmt(end)}</td>
+    <td><span class="badge bt">${fmt(addDays(s,9))}</span></td>
+    <td><span class="badge bs">${fmt(addDays(s,10))}</span></td>
+    <td><span class="badge bv">${fmt(addDays(s,11))} – ${fmt(addDays(s,14))}</span></td>
+    <td><span class="badge bp">${fmt(addDays(s,15))}</span></td>
+  </tr>`;
+});
+document.getElementById('sprint-tbody').innerHTML=tbody;
+
+// ── BANNER + HOME CARDS ─────────────────────────────────────────────
+(function(){
+  let cur=null;
+  SPRINT_STARTS.forEach((start,idx)=>{
+    const s=parseDate(start), end=addDays(s,11);
+    if(!cur&&today>=s&&today<=end) cur={num:SPRINT_BASE+idx,s,end};
+  });
+  if(!cur){
+    for(let i=0;i<SPRINT_STARTS.length;i++){
+      const s=parseDate(SPRINT_STARTS[i]);
+      if(s>today){cur={num:SPRINT_BASE+i,s,end:addDays(s,11)};break;}
+    }
+  }
+  if(!cur) return;
+
+  const info=dInfo[todayKey];
+  const sm={testing:'Reg. testing',submit:'Submit for Review',review:'Review in Progress',publish:'Publishing to Stores'};
+  const todayLabel=info?'📍 '+sm[info.type]:'Regular sprint work';
+
+  document.getElementById('banner').innerHTML=`
+    <div class="sb-item"><div class="lbl">Current Sprint</div><div class="val">Sprint ${cur.num} · ${fmt(cur.s)} — ${fmt(cur.end)}</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item"><div class="lbl">Reg. testing · Submit</div><div class="val">${fmt(addDays(cur.s,9))} · ${fmt(addDays(cur.s,10))}</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item"><div class="lbl">Review</div><div class="val">${fmt(addDays(cur.s,11))} – ${fmt(addDays(cur.s,14))}</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item"><div class="lbl">Publish</div><div class="val">${fmt(addDays(cur.s,15))}</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item"><div class="lbl">Today</div><div class="val">${todayLabel}</div></div>`;
+
+  const daysToCk=Math.round((addDays(cur.s,9)-today)/864e5);
+  const daysToRl=Math.round((addDays(cur.s,15)-today)/864e5);
+  const dLabel=n=>n===0?'Today':n>0?`In ${n}d`:'Next sprint';
+
+  document.getElementById('home-cards').innerHTML=`
+    <div class="stat-card" onclick="go('calendar',document.getElementById('nav-calendar'))">
+      <div class="sc-icon" style="background:#e0e7ff">🏃</div>
+      <div class="sc-label">Current Sprint</div>
+      <div class="sc-value">Sprint ${cur.num}</div>
+      <div class="sc-sub">${fmt(cur.s)} — ${fmt(cur.end)}</div>
+    </div>
+    <div class="stat-card" onclick="go('calendar',document.getElementById('nav-calendar'))">
+      <div class="sc-icon" style="background:#dbeafe">🧪</div>
+      <div class="sc-label">Next Reg. Testing</div>
+      <div class="sc-value">${dLabel(daysToCk)}</div>
+      <div class="sc-sub">${fmt(addDays(cur.s,9))}</div>
+    </div>
+    <div class="stat-card" onclick="go('calendar',document.getElementById('nav-calendar'))">
+      <div class="sc-icon" style="background:#dcfce7">🚀</div>
+      <div class="sc-label">Next Publish Date</div>
+      <div class="sc-value">${dLabel(daysToRl)}</div>
+      <div class="sc-sub">${fmt(addDays(cur.s,15))}</div>
+    </div>`;
+})();
+
+// ── SIDEBAR ─────────────────────────────────────────────────────────
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────
+const TITLES={home:'Home',calendar:'Release Calendar',incident:'Report Incident',task:'Create Task'};
+function go(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('bc').textContent=TITLES[id]||id;
+}
+
+// ── CUSTOM DATE PICKER ──────────────────────────────────────────────
+const _DP={};
+const _DPM=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const _DPD=['Mo','Tu','We','Th','Fr','Sa','Su'];
+const _DAYF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function dpCreate(id,initVal,minVal){
+  const now=new Date();now.setHours(0,0,0,0);
+  const ref=initVal?parseDate(initVal):now;
+  _DP[id]={y:ref.getFullYear(),m:ref.getMonth(),val:initVal||null,min:minVal||null,nowKey:toKey(now)};
+  dpRefresh(id);
+}
+function dpToggle(id){
+  const pop=document.getElementById('dp-popup-'+id);
+  const isOpen=pop.style.display!=='none';
+  Object.keys(_DP).forEach(k=>{if(k!==id)dpHide(k);});
+  if(isOpen){dpHide(id);}else{dpDraw(id);pop.style.display='block';document.getElementById('dp-trig-'+id).classList.add('open');}
+}
+function dpHide(id){
+  const pop=document.getElementById('dp-popup-'+id);
+  const trig=document.getElementById('dp-trig-'+id);
+  if(pop)pop.style.display='none';
+  if(trig)trig.classList.remove('open');
+}
+function dpNav(id,delta){
+  const s=_DP[id];s.m+=delta;
+  if(s.m<0){s.m=11;s.y--;}if(s.m>11){s.m=0;s.y++;}
+  dpDraw(id);
+}
+function dpPick(id,dateStr){
+  const s=_DP[id];
+  if(s.min&&dateStr<s.min)return;
+  s.val=dateStr;
+  document.getElementById(id==='inc'?'inc-date':'task-due').value=dateStr;
+  dpRefresh(id);dpHide(id);
+}
+function dpDraw(id){
+  const s=_DP[id];
+  const pop=document.getElementById('dp-popup-'+id);
+  pop.onclick=e=>e.stopPropagation();
+  const first=new Date(s.y,s.m,1);
+  const last=new Date(s.y,s.m+1,0);
+  let startDow=first.getDay()-1;if(startDow<0)startDow=6;
+  let html=`<div class="dp-head">
+    <button class="dp-nb" type="button" onclick="dpNav('${id}',-1)">‹</button>
+    <span class="dp-ml">${_DPM[s.m]} ${s.y}</span>
+    <button class="dp-nb" type="button" onclick="dpNav('${id}',1)">›</button>
+  </div><div class="dp-cal">`;
+  _DPD.forEach(d=>{html+=`<div class="dp-dh">${d}</div>`;});
+  for(let i=0;i<startDow;i++)html+='<div></div>';
+  for(let d=1;d<=last.getDate();d++){
+    const ds=`${s.y}-${String(s.m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow=new Date(s.y,s.m,d).getDay();
+    const isWknd=dow===0||dow===6;
+    const isToday=ds===s.nowKey;
+    const isSel=ds===s.val;
+    const isOff=!!(s.min&&ds<s.min);
+    let cls='dp-d';
+    if(isWknd)cls+=' wk';if(isToday)cls+=' td';if(isSel)cls+=' s';if(isOff)cls+=' off';
+    html+=`<div class="${cls}"${isOff?'':` onclick="dpPick('${id}','${ds}')"`}>${d}</div>`;
+  }
+  pop.innerHTML=html+'</div>';
+}
+function dpRefresh(id){
+  const s=_DP[id];
+  const mainEl=document.getElementById(id==='inc'?'dp-main-inc':'due-text-main');
+  const subEl=id==='due'?document.getElementById('due-text-sub'):null;
+  if(!s.val){if(mainEl)mainEl.textContent='Select a date';return;}
+  const [y,mo,d]=s.val.split('-').map(Number);
+  const date=new Date(y,mo-1,d);
+  if(mainEl)mainEl.textContent=`${_DAYF[date.getDay()]}, ${d} ${_DPM[mo-1]} ${y}`;
+  if(subEl){
+    const now=new Date();now.setHours(0,0,0,0);
+    const minD=new Date(now);minD.setDate(now.getDate()+21);
+    const days=Math.round((date-now)/86400000);
+    const weeks=Math.round(days/7);
+    subEl.textContent=s.val===toKey(minD)?'Earliest possible · today + 3 weeks':weeks>=2?`In ${weeks} weeks`:weeks===1?'In 1 week':`In ${days} days`;
+  }
+}
+function dpReset(id,newVal,newMin){
+  const s=_DP[id];if(!s)return;
+  s.val=newVal;s.min=newMin||null;
+  if(newVal){const ref=parseDate(newVal);s.y=ref.getFullYear();s.m=ref.getMonth();}
+  document.getElementById(id==='inc'?'inc-date':'task-due').value=newVal||'';
+  dpRefresh(id);
+}
+document.addEventListener('click',()=>{Object.keys(_DP).forEach(k=>dpHide(k));});
+
+// ── FORM ────────────────────────────────────────────────────────────
+dpCreate('inc',todayKey,null);
+function toggleChip(cb){cb.closest('.chip').classList.toggle('sel',cb.checked);}
+function toggleOther(cb){document.getElementById('other-field').style.display=cb.checked?'block':'none';}
+function handleSubmit(e){
+  e.preventDefault();
+  document.getElementById('inc-form').style.display='none';
+  document.getElementById('success-box').style.display='block';
+}
+function resetForm(){
+  const f=document.getElementById('inc-form');
+  f.reset();f.style.display='block';
+  dpReset('inc',todayKey,null);
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('other-field').style.display='none';
+  document.getElementById('success-box').style.display='none';
+}
+
+// ── CREATE TASK ──────────────────────────────────────────────────────
+(function initTaskForm(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const minD=new Date(now);minD.setDate(now.getDate()+21);
+  const minStr=toKey(minD);
+  dpCreate('due',minStr,minStr);
+  document.querySelectorAll('[name=priority]').forEach(r=>r.addEventListener('change',()=>{
+    const isCrit=document.querySelector('[name=priority]:checked')?.value==='Critical';
+    document.getElementById('critical-box').classList.toggle('show',isCrit);
+    document.getElementById('task-critical').required=isCrit;
+  }));
+})();
+
+function toggleOtherArea(cb){
+  document.getElementById('other-area-field').classList.toggle('show',cb.checked);
+  if(!cb.checked) document.getElementById('other-area-text').value='';
+}
+
+function appendMetric(text){
+  const ta=document.getElementById('task-metric');
+  if(ta.value&&!ta.value.endsWith(', ')&&!ta.value.endsWith('\n')) ta.value+=', ';
+  ta.value+=text; ta.focus();
+}
+
+let _attachedFiles=[];
+function handleMockupFiles(input){
+  [...input.files].forEach(f=>{if(!_attachedFiles.find(x=>x.name===f.name)) _attachedFiles.push(f);});
+  renderFileList(); input.value='';
+}
+function renderFileList(){
+  const icons={'jpg':'🖼️','jpeg':'🖼️','png':'🖼️','gif':'🖼️','webp':'🖼️','svg':'🖼️','pdf':'📄','fig':'🎨','sketch':'🎨'};
+  document.getElementById('mockup-file-list').innerHTML=_attachedFiles.map((f,i)=>`
+    <div class="mockup-file-item">
+      <span>${icons[f.name.split('.').pop().toLowerCase()]||'📎'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span style="font-size:11px;color:#9ca3af;flex-shrink:0">${(f.size/1024).toFixed(0)} KB</span>
+      <button type="button" class="mockup-remove" onclick="removeFile(${i})">✕</button>
+    </div>`).join('');
+}
+function removeFile(i){_attachedFiles.splice(i,1);renderFileList();}
+
+async function createTask(e){
+  e.preventDefault();
+  const title=document.getElementById('task-title').value.trim();
+  const why=document.getElementById('task-why').value.trim();
+  const metric=document.getElementById('task-metric').value.trim();
+  const priority=document.querySelector('[name=priority]:checked')?.value||'';
+  const criticalReason=priority==='Critical'?document.getElementById('task-critical').value.trim():'';
+  const dueDate=document.getElementById('task-due').value;
+  const areas=[...document.querySelectorAll('.area-lbl input:checked')].map(c=>c.value);
+  const otherAreaText=document.getElementById('other-area-text').value.trim();
+  const mockupLink=document.getElementById('mockup-link').value.trim();
+  const mockupFileNames=_attachedFiles.map(f=>f.name);
+  if(!title||!why||!dueDate) return;
+  const btn=document.getElementById('task-submit-btn');
+  btn.disabled=true; btn.textContent='Creating…';
+  try{
+    const r=await fetch('/api/create-task',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,why,metric,priority,criticalReason,dueDate,areas,otherAreaText,mockupLink,mockupFileNames})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Unknown error');
+    document.getElementById('task-form').style.display='none';
+    document.getElementById('task-notion-link').href=d.url||'https://app.notion.com/p/102bba654d624b6bbd995720f8b245ba';
+    document.getElementById('task-success').style.display='block';
+  }catch(err){
+    document.getElementById('task-form').style.display='none';
+    document.getElementById('task-error-msg').textContent=err.message;
+    document.getElementById('task-error').style.display='block';
+  }finally{
+    btn.disabled=false; btn.textContent='Add to Notion';
+  }
+}
+
+// ── SPRINT BOARD ─────────────────────────────────────────────────────
+const BOARD_COLS=[
+  {id:'New',                   label:'New',            color:'#3b82f6'},
+  {id:'Analysis',              label:'Analysis',       color:'#f59e0b'},
+  {id:'Design',                label:'Design',         color:'#E07532'},
+  {id:'Documentation',         label:'Documentation',  color:'#8b5cf6'},
+  {id:'Ready for Development', label:'Ready for Dev',  color:'#10b981'},
+];
+const FLOW_CLR={
+  Authorization:{bg:'#dbeafe',c:'#1e40af'},KYC:{bg:'#dcfce7',c:'#166534'},
+  Calls:{bg:'#f3f4f6',c:'#374151'},Deposits:{bg:'#fef9c3',c:'#854d0e'},
+  Withdrawals:{bg:'#ffedd5',c:'#9a3412'},Onboarding:{bg:'#f3e8ff',c:'#6b21a8'},
+  Portfolio:{bg:'#fce7f3',c:'#9d174d'},Trading:{bg:'#fef2f2',c:'#991b1b'},
+  Other:{bg:'#f9fafb',c:'#6b7280'},
+};
+const PRIO_CLR={
+  Low:     {bg:'#f3f4f6',            c:'#6b7280'},
+  Medium:  {bg:'rgba(224,117,50,.1)',c:'#E07532'},
+  High:    {bg:'#fff7ed',            c:'#ea580c'},
+  Critical:{bg:'#fef2f2',            c:'#dc2626'},
+};
+
+let _boardLoaded=false;
+async function loadBoard(){
+  if(_boardLoaded===true) return;
+  _boardLoaded=true;
+  const msg=document.getElementById('board-msg');
+  const cols=document.getElementById('board-cols');
+  const btn=document.getElementById('board-refresh-btn');
+  msg.innerHTML='<div style="font-size:28px">⏳</div><strong>Loading…</strong><span>Fetching from Notion</span>';
+  msg.style.display='flex'; cols.style.display='none';
+  btn.classList.add('spinning');
+  try{
+    const r=await fetch('/api/tasks');
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.error||'Failed to load tasks');
+    const byStatus={};
+    BOARD_COLS.forEach(c=>{byStatus[c.id]=[];});
+    data.tasks.forEach(t=>{
+      const key=BOARD_COLS.find(c=>c.id===t.status)?t.status:'New';
+      byStatus[key].push(t);
+    });
+    cols.innerHTML=BOARD_COLS.map(col=>{
+      const tasks=byStatus[col.id];
+      const cards=tasks.length?tasks.map(t=>{
+        const ps=PRIO_CLR[t.priority]||{};
+        const areas=(t.flow||[]).map(a=>{
+          const s=FLOW_CLR[a]||{bg:'#f3f4f6',c:'#374151'};
+          return `<span class="tc-area" style="background:${s.bg};color:${s.c}">${a}</span>`;
+        }).join('');
+        let dueHtml='';
+        if(t.dueDate){
+          const[y,m,d]=t.dueDate.split('-').map(Number);
+          const dt=new Date(y,m-1,d),now=new Date();now.setHours(0,0,0,0);
+          const dy=Math.round((dt-now)/864e5);
+          const[dtext,dcol]=dy<0?[`${Math.abs(dy)}d overdue`,'#dc2626']:
+            dy===0?['Due today','#E07532']:
+            dy<=7?[`In ${dy}d`,'#ea580c']:
+            [`${d} ${MS[m-1]}`,'#9ca3af'];
+          dueHtml=`<span class="tc-due" style="color:${dcol}">📅 ${dtext}</span>`;
+        }
+        const prioHtml=t.priority?`<span class="tc-prio" style="background:${ps.bg};color:${ps.c}">${t.priority}</span>`:'';
+        return `<a class="task-card" href="${t.url}" target="_blank">
+          <div class="tc-title">${t.title}</div>
+          ${areas?`<div class="tc-areas">${areas}</div>`:''}
+          <div class="tc-foot">${dueHtml}${prioHtml}</div>
+        </a>`;
+      }).join(''):`<div class="col-empty">No tasks</div>`;
+      return `<div class="board-col">
+        <div class="col-head" style="--cc:${col.color}">
+          <span class="col-name">${col.label}</span>
+          <span class="col-cnt">${tasks.length}</span>
+        </div>
+        <div class="tc-wrap">${cards}</div>
+      </div>`;
+    }).join('');
+    msg.style.display='none'; cols.style.display='flex';
+  }catch(err){
+    msg.innerHTML=`<div style="font-size:28px">⚠️</div><strong>Could not load tasks</strong><span style="font-size:13px">${err.message}</span>`;
+  }finally{
+    btn.classList.remove('spinning');
+    _boardLoaded=false;
+  }
+}
+
+function resetTaskForm(){
+  document.getElementById('task-form').reset();
+  document.getElementById('task-form').style.display='block';
+  document.getElementById('task-success').style.display='none';
+  document.getElementById('task-error').style.display='none';
+  document.getElementById('critical-box').classList.remove('show');
+  document.getElementById('task-critical').required=false;
+  document.getElementById('other-area-field').classList.remove('show');
+  document.querySelector('[name=priority][value=Medium]').checked=true;
+  _attachedFiles=[]; renderFileList();
+  const now=new Date();now.setHours(0,0,0,0);
+  const minD=new Date(now);minD.setDate(now.getDate()+21);
+  const minStr=toKey(minD);
+  dpReset('due',minStr,minStr);
+}
+</script>
+</body>
+</html>
