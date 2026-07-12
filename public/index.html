@@ -637,13 +637,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <script>
 // ── SPRINT DATA ──────────────────────────────────────────────────────
-const SPRINT_STARTS = [
-  '2026-06-08','2026-06-22','2026-07-06','2026-07-20',
-  '2026-08-03','2026-08-17','2026-08-31','2026-09-14',
-  '2026-09-28','2026-10-12','2026-10-26','2026-11-09',
-  '2026-11-23','2026-12-07'
-];
-const SPRINT_BASE = 71;
+// ── SPRINT ANCHOR ────────────────────────────────────────────────────
+// The current sprint is the single source of truth — read live from Notion
+// (/api/current-sprint → Sprints DB row with Status = "Current"). If Notion is
+// unavailable we compute it from this anchor so the hub never breaks. Every
+// other sprint, plus the calendar and milestones, is derived on a 2-week cadence.
+const ANCHOR_NUM = 72;              // anchor sprint number
+const ANCHOR_START = '2026-07-06';  // its Monday start (fallback only; Notion overrides)
+const SPRINT_DAYS = 14;             // sprint length / cadence, in days
 
 // Bulgarian public holidays (Jun–Dec 2026)
 const HOLIDAYS = new Set([
@@ -668,20 +669,7 @@ function parseDate(str){const[y,m,d]=str.split('-').map(Number);return new Date(
 
 // Event priority: publish > review > submit > testing
 const PRIO = {publish:4, review:3, submit:2, testing:1};
-const dInfo = {};
-
-SPRINT_STARTS.forEach((start,idx)=>{
-  const s=parseDate(start), num=SPRINT_BASE+idx;
-  const set=(d,type)=>{
-    const k=toKey(d);
-    if(!dInfo[k]||PRIO[type]>PRIO[dInfo[k].type]) dInfo[k]={type,sprint:num};
-  };
-  set(addDays(s, 9), 'testing');  // Wed week 2
-  set(addDays(s,10), 'submit');   // Thu week 2
-  set(addDays(s,11), 'review');   // Fri week 2
-  set(addDays(s,14), 'review');   // Mon following
-  set(addDays(s,15), 'publish');  // Tue following
-});
+let dInfo = {};   // calendar day (YYYY-MM-DD) → {type, sprint}; rebuilt on each render
 
 // ── CALENDAR ────────────────────────────────────────────────────────
 const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -689,6 +677,8 @@ const MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec
 // Unambiguous 2-char day headers: Mo Tu We Th Fr Sa Su
 const DN=['Mo','Tu','We','Th','Fr','Sa','Su'];
 const todayKey=toKey(new Date());
+const today=new Date(); today.setHours(0,0,0,0);
+function fmt(d){return `${d.getDate()} ${MS[d.getMonth()]}`;}
 
 function buildMonth(y,m){
   const first=new Date(y,m,1), last=new Date(y,m+1,0);
@@ -712,43 +702,61 @@ function buildMonth(y,m){
   for(let i=ld+1;i<7;i++) h+=`<td><div class="day empty"></div></td>`;
   return h+'</tr></table></div>';
 }
-let calHtml='';
-for(let m=5;m<=11;m++) calHtml+=buildMonth(2026,m);
-document.getElementById('cal-grid').innerHTML=calHtml;
 
-// ── SPRINT TABLE ────────────────────────────────────────────────────
-function fmt(d){return `${d.getDate()} ${MS[d.getMonth()]}`;}
-const today=new Date(); today.setHours(0,0,0,0);
+// Current sprint computed from the anchor + today — the fallback when Notion is unavailable.
+function fallbackAnchor(){
+  const start=parseDate(ANCHOR_START);
+  const k=Math.floor((today-start)/(864e5*SPRINT_DAYS));
+  return {num:ANCHOR_NUM+k, start:addDays(start, SPRINT_DAYS*k)};
+}
 
-let tbody='';
-SPRINT_STARTS.forEach((start,idx)=>{
-  const s=parseDate(start), num=SPRINT_BASE+idx, end=addDays(s,11);
-  const isCur=today>=s&&today<=end;
-  tbody+=`<tr class="${isCur?'cur':''}">
-    <td><strong>Sprint ${num}</strong>${isCur?'<span class="badge bx">Current</span>':''}</td>
-    <td>${fmt(s)} — ${fmt(end)}</td>
-    <td><span class="badge bt">${fmt(addDays(s,9))}</span></td>
-    <td><span class="badge bs">${fmt(addDays(s,10))}</span></td>
-    <td><span class="badge bv">${fmt(addDays(s,11))} – ${fmt(addDays(s,14))}</span></td>
-    <td><span class="badge bp">${fmt(addDays(s,15))}</span></td>
-  </tr>`;
-});
-document.getElementById('sprint-tbody').innerHTML=tbody;
-
-// ── BANNER + HOME CARDS ─────────────────────────────────────────────
-(function(){
-  let cur=null;
-  SPRINT_STARTS.forEach((start,idx)=>{
-    const s=parseDate(start), end=addDays(s,11);
-    if(!cur&&today>=s&&today<=end) cur={num:SPRINT_BASE+idx,s,end};
-  });
-  if(!cur){
-    for(let i=0;i<SPRINT_STARTS.length;i++){
-      const s=parseDate(SPRINT_STARTS[i]);
-      if(s>today){cur={num:SPRINT_BASE+i,s,end:addDays(s,11)};break;}
-    }
+// Render calendar + sprint table + banner + home cards from an anchor sprint.
+function renderSprints(anchor){
+  // Build a wide sequence of sprints around the anchor (fixed 2-week cadence).
+  const sprints=[];
+  for(let n=anchor.num-6; n<=anchor.num+18; n++){
+    sprints.push({num:n, s:addDays(anchor.start, SPRINT_DAYS*(n-anchor.num))});
   }
+
+  // Rebuild the milestone map for the calendar
+  dInfo={};
+  const set=(d,type,num)=>{const k=toKey(d); if(!dInfo[k]||PRIO[type]>PRIO[dInfo[k].type]) dInfo[k]={type,sprint:num};};
+  sprints.forEach(({num,s})=>{
+    set(addDays(s, 9),'testing',num); // Wed week 2
+    set(addDays(s,10),'submit', num); // Thu week 2
+    set(addDays(s,11),'review', num); // Fri week 2
+    set(addDays(s,14),'review', num); // Mon following
+    set(addDays(s,15),'publish',num); // Tue following
+  });
+
+  // Calendar window: 7 months, starting one month before the current month (rolls automatically)
+  const winStart=new Date(today.getFullYear(), today.getMonth()-1, 1);
+  const winEnd  =new Date(winStart.getFullYear(), winStart.getMonth()+7, 1);
+  let calHtml='';
+  for(let i=0;i<7;i++){const d=new Date(winStart.getFullYear(), winStart.getMonth()+i, 1); calHtml+=buildMonth(d.getFullYear(), d.getMonth());}
+  document.getElementById('cal-grid').innerHTML=calHtml;
+
+  // Sprint table — only sprints whose start falls inside the calendar window
+  let tbody='';
+  sprints.forEach(({num,s})=>{
+    if(s<winStart||s>=winEnd) return;
+    const end=addDays(s,11), isCur=today>=s&&today<=end;
+    tbody+=`<tr class="${isCur?'cur':''}">
+      <td><strong>Sprint ${num}</strong>${isCur?'<span class="badge bx">Current</span>':''}</td>
+      <td>${fmt(s)} — ${fmt(end)}</td>
+      <td><span class="badge bt">${fmt(addDays(s,9))}</span></td>
+      <td><span class="badge bs">${fmt(addDays(s,10))}</span></td>
+      <td><span class="badge bv">${fmt(addDays(s,11))} – ${fmt(addDays(s,14))}</span></td>
+      <td><span class="badge bp">${fmt(addDays(s,15))}</span></td>
+    </tr>`;
+  });
+  document.getElementById('sprint-tbody').innerHTML=tbody;
+
+  // Banner + home cards → current sprint (or next upcoming if we're between sprints)
+  let cur=sprints.find(({s})=>today>=s&&today<=addDays(s,11));
+  if(!cur) cur=sprints.find(({s})=>s>today);
   if(!cur) return;
+  cur={num:cur.num, s:cur.s, end:addDays(cur.s,11)};
 
   const info=dInfo[todayKey];
   const sm={testing:'Reg. testing',submit:'Submit for Review',review:'Review in Progress',publish:'Publishing to Stores'};
@@ -788,7 +796,15 @@ document.getElementById('sprint-tbody').innerHTML=tbody;
       <div class="sc-value">${dLabel(daysToRl)}</div>
       <div class="sc-sub">${fmt(addDays(cur.s,15))}</div>
     </div>`;
-})();
+}
+
+// Render instantly from the computed fallback, then upgrade from Notion if reachable.
+renderSprints(fallbackAnchor());
+fetch('/api/current-sprint').then(r=>r.ok?r.json():null).then(d=>{
+  if(d&&d.current&&d.current.start&&d.current.number){
+    renderSprints({num:d.current.number, start:parseDate(String(d.current.start).slice(0,10))});
+  }
+}).catch(()=>{});
 
 // ── SIDEBAR ─────────────────────────────────────────────────────────
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}

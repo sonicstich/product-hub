@@ -6,7 +6,7 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
-const { createTask, listTasks, HttpError } = require('./lib/notion');
+const { createTask, listTasks, getCurrentSprint, HttpError } = require('./lib/notion');
 
 // Load .env manually for local dev (Vercel injects env vars on its own).
 const envPath = path.join(__dirname, '.env');
@@ -32,6 +32,11 @@ app.post('/api/create-task', async (req, res) => {
 
 app.get('/api/tasks', async (req, res) => {
   try { res.json(await listTasks()); }
+  catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
+});
+
+app.get('/api/current-sprint', async (req, res) => {
+  try { res.json(await getCurrentSprint()); }
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
 });
 
