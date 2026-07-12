@@ -255,6 +255,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .row2{grid-template-columns:1fr}
   .sb-sep{display:none}
 }
+/* ── Open Incidents ── */
+.inc-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.inc-filters{display:flex;gap:8px;flex-wrap:wrap}
+.inc-fchip{padding:7px 13px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;font-size:12.5px;font-weight:600;color:#6b7280;cursor:pointer;transition:all .15s;user-select:none}
+.inc-fchip b{opacity:.55;font-weight:700}
+.inc-fchip:hover{border-color:#d1d5db}
+.inc-fchip.on{background:#141210;border-color:#141210;color:#fff}
+.inc-fchip.on b{opacity:.75}
+.inc-new-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 17px;border-radius:9px;background:#E07532;color:#fff;border:none;font-size:13.5px;font-weight:700;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.inc-new-btn:hover{filter:brightness(1.08)}
+.inc-list{display:flex;flex-direction:column;gap:12px}
+.inc-card{background:#fff;border:1px solid #ece8e1;border-radius:14px;padding:17px 20px;box-shadow:0 1px 3px rgba(20,18,16,.04);transition:box-shadow .15s}
+.inc-card:hover{box-shadow:0 5px 16px rgba(20,18,16,.08)}
+.inc-card.resolved{opacity:.55}
+.inc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.inc-title{font-size:15px;font-weight:700;color:#141210;line-height:1.35}
+.inc-desc{font-size:13px;color:#6b7280;line-height:1.55;margin-top:5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.inc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.inc-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#f3f4f6;color:#4b5563}
+.inc-pri{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.inc-pri.Critical{background:#fee2e2;color:#b91c1c}
+.inc-pri.High{background:#ffedd5;color:#c2410c}
+.inc-pri.Medium{background:#fef9c3;color:#854d0e}
+.inc-pri.Low{background:#dcfce7;color:#15803d}
+.inc-date{font-size:11px;color:#9ca3af}
+.inc-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.inc-status{appearance:none;-webkit-appearance:none;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;border:1.5px solid transparent;cursor:pointer;outline:none}
+.inc-status.st-open{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+.inc-status.st-inprogress{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.inc-status.st-backlog{background:#f3f4f6;color:#4b5563;border-color:#e5e7eb}
+.inc-status.st-resolved{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+.inc-del{width:30px;height:30px;border-radius:7px;border:1.5px solid #eee;background:#fff;color:#c4c9d0;cursor:pointer;font-size:12px;flex-shrink:0;transition:all .15s}
+.inc-del:hover{border-color:#fca5a5;color:#ef4444;background:#fef2f2}
+.inc-empty{text-align:center;padding:56px 20px;color:#9ca3af;font-size:14px}
+.inc-empty .ico{font-size:38px;margin-bottom:10px}
+.nav-badge{margin-left:auto;background:#E07532;color:#fff;font-size:10.5px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0}
+.nav-badge:empty{display:none}
+.collapsed .nav-badge{display:none}
 </style>
 </head>
 <body>
@@ -287,6 +325,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="nav-item" id="nav-task" onclick="go('task',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
         <span class="nav-label">Create Task</span>
+      </div>
+      <div class="nav-item" id="nav-incidents" onclick="go('incidents',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <span class="nav-label">Open Incidents</span>
+        <span class="nav-badge" id="inc-nav-count"></span>
       </div>
       <div class="nav-item" id="nav-incident" onclick="go('incident',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
@@ -430,11 +473,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <form id="inc-form" onsubmit="handleSubmit(event)">
             <div class="field">
               <label>Incident title<span class="req">*</span></label>
-              <input class="inp" type="text" placeholder="Short description: what broke?" required>
+              <input class="inp" id="inc-title" type="text" placeholder="Short description: what broke?" required>
             </div>
             <div class="field">
               <label>Description<span class="req">*</span></label>
-              <textarea class="txa" placeholder="What happened? How to reproduce? What is not working?" required></textarea>
+              <textarea class="txa" id="inc-desc" placeholder="What happened? How to reproduce? What is not working?" required></textarea>
             </div>
             <div class="row2">
               <div class="field">
@@ -451,22 +494,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
               <div class="field">
                 <label>Affected users</label>
-                <input class="inp" type="number" placeholder="~0" min="0">
+                <input class="inp" id="inc-users" type="number" placeholder="~0" min="0">
               </div>
             </div>
             <div class="field">
               <label>Priority<span class="req">*</span></label>
-              <select class="sel" required>
+              <select class="sel" id="inc-priority" required>
                 <option value="">Select priority...</option>
-                <option>🔴 Critical — service is down</option>
-                <option>🟠 High — core flow is broken</option>
-                <option>🟡 Medium — partial malfunction</option>
-                <option>🟢 Low — cosmetic / minor issue</option>
+                <option value="Critical">🔴 Critical — service is down</option>
+                <option value="High">🟠 High — core flow is broken</option>
+                <option value="Medium">🟡 Medium — partial malfunction</option>
+                <option value="Low">🟢 Low — cosmetic / minor issue</option>
               </select>
             </div>
             <div class="field">
               <label>Related to<span class="req">*</span></label>
-              <div class="chips">
+              <div class="chips" id="inc-areas">
                 <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Trading</label>
                 <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Deposits</label>
                 <label class="chip"><input type="checkbox" onchange="toggleChip(this)">Withdrawals</label>
@@ -477,7 +520,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div class="field" id="other-field" style="display:none">
               <label>Specify area</label>
-              <input class="inp" type="text" placeholder="e.g. push notifications, user profile...">
+              <input class="inp" id="inc-other" type="text" placeholder="e.g. push notifications, user profile...">
             </div>
             <button type="submit" class="btn-sub">Submit Incident Report</button>
           </form>
@@ -485,10 +528,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div class="ico">✅</div>
             <h3>Incident recorded</h3>
             <p>The team has been notified. Thank you for the report!</p>
-            <button class="btn-again" onclick="resetForm()">Report another incident</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+              <button class="btn-again" onclick="go('incidents',document.getElementById('nav-incidents'))">View open incidents</button>
+              <button class="btn-again" style="background:#f3f4f6;color:#374151" onclick="resetForm()">Report another</button>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- OPEN INCIDENTS -->
+    <div id="page-incidents" class="page">
+      <div class="inc-toolbar">
+        <div class="inc-filters" id="inc-filters"></div>
+        <button class="inc-new-btn" onclick="go('incident',document.getElementById('nav-incident'))">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New incident
+        </button>
+      </div>
+      <div class="inc-list" id="inc-list"><div class="inc-empty">Loading…</div></div>
     </div>
 
     <!-- CREATE TASK -->
@@ -806,13 +864,14 @@ renderSprints(currentAnchor());
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incident:'Report Incident',task:'Create Task'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task'};
 function go(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(el) el.classList.add('active');
   document.getElementById('bc').textContent=TITLES[id]||id;
+  if(id==='incidents') loadIncidents();
 }
 
 // ── CUSTOM DATE PICKER ──────────────────────────────────────────────
@@ -907,10 +966,27 @@ document.addEventListener('click',()=>{Object.keys(_DP).forEach(k=>dpHide(k));})
 dpCreate('inc',todayKey,null);
 function toggleChip(cb){cb.closest('.chip').classList.toggle('sel',cb.checked);}
 function toggleOther(cb){document.getElementById('other-field').style.display=cb.checked?'block':'none';}
-function handleSubmit(e){
+async function handleSubmit(e){
   e.preventDefault();
-  document.getElementById('inc-form').style.display='none';
-  document.getElementById('success-box').style.display='block';
+  const btn=e.target.querySelector('.btn-sub');
+  const title=document.getElementById('inc-title').value.trim();
+  const description=document.getElementById('inc-desc').value.trim();
+  const priority=document.getElementById('inc-priority').value;
+  const affected=document.getElementById('inc-users').value;
+  const date=document.getElementById('inc-date').value;
+  let areas=[...document.querySelectorAll('#inc-areas .chip.sel')].map(c=>c.textContent.trim());
+  const other=document.getElementById('inc-other').value.trim();
+  if(areas.includes('Other')){ areas=areas.filter(a=>a!=='Other'); if(other) areas.push(other); }
+  btn.disabled=true; const t0=btn.textContent; btn.textContent='Submitting…';
+  try{
+    const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,priority,affected,date,areas})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||'Failed to save');
+    document.getElementById('inc-form').style.display='none';
+    document.getElementById('success-box').style.display='block';
+    _incidentsDirty=true;
+  }catch(err){ alert('Не удалось сохранить инцидент: '+err.message); }
+  finally{ btn.disabled=false; btn.textContent=t0; }
 }
 function resetForm(){
   const f=document.getElementById('inc-form');
@@ -920,6 +996,90 @@ function resetForm(){
   document.getElementById('other-field').style.display='none';
   document.getElementById('success-box').style.display='none';
 }
+
+// ── OPEN INCIDENTS ───────────────────────────────────────────────────
+const INC_STATUSES=['Open','In Progress','Backlog','Resolved'];
+let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false;
+
+function escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function stClass(s){return 'st-'+s.toLowerCase().replace(/[^a-z]/g,'');}
+function fmtIncDate(d){const p=String(d||'').slice(0,10).split('-').map(Number);return p[0]?`${p[2]} ${MS[p[1]-1]} ${p[0]}`:'';}
+
+async function loadIncidents(force){
+  const list=document.getElementById('inc-list');
+  if(_incidentsLoaded&&!force&&!_incidentsDirty){renderIncidents();return;}
+  _incidentsDirty=false;
+  try{
+    const r=await fetch('/api/incidents');
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Failed to load');
+    _incidents=d.incidents||[];
+    _incidentsLoaded=true;
+    renderIncidents();
+  }catch(err){
+    if(list) list.innerHTML=`<div class="inc-empty"><div class="ico">⚠️</div>Не удалось загрузить инциденты<br><span style="font-size:12px">${escHtml(err.message)}</span></div>`;
+  }
+}
+
+function setIncFilter(f){_incFilter=f;renderIncidents();}
+
+function renderIncidents(){
+  const activeCount=_incidents.filter(i=>i.status!=='Resolved').length;
+  const badge=document.getElementById('inc-nav-count'); if(badge) badge.textContent=activeCount||'';
+  const fl=document.getElementById('inc-filters');
+  if(fl){
+    const counts={}; INC_STATUSES.forEach(s=>counts[s]=_incidents.filter(i=>i.status===s).length);
+    const chips=[['Active','🔥 Active',activeCount],...INC_STATUSES.map(s=>[s,s,counts[s]]),['All','All',_incidents.length]];
+    fl.innerHTML=chips.map(([v,l,n])=>`<div class="inc-fchip ${_incFilter===v?'on':''}" onclick="setIncFilter('${v}')">${l} <b>${n}</b></div>`).join('');
+  }
+  const list=document.getElementById('inc-list'); if(!list) return;
+  let items=_incidents.slice();
+  if(_incFilter==='Active') items=items.filter(i=>i.status!=='Resolved');
+  else if(_incFilter!=='All') items=items.filter(i=>i.status===_incFilter);
+  if(!items.length){ list.innerHTML=`<div class="inc-empty"><div class="ico">🎉</div>Нет инцидентов${_incFilter==='Active'?' — всё спокойно':''}</div>`; return; }
+  list.innerHTML=items.map(i=>{
+    const opts=INC_STATUSES.map(s=>`<option ${s===i.status?'selected':''}>${s}</option>`).join('');
+    const areas=(i.areas||[]).map(a=>`<span class="inc-tag">${escHtml(a)}</span>`).join('');
+    return `<div class="inc-card ${i.status==='Resolved'?'resolved':''}">
+      <div class="inc-top">
+        <div style="flex:1;min-width:0">
+          <div class="inc-title">${escHtml(i.title)}</div>
+          ${i.description?`<div class="inc-desc">${escHtml(i.description)}</div>`:''}
+          <div class="inc-meta">
+            <span class="inc-pri ${escHtml(i.priority)}">${escHtml(i.priority)}</span>
+            ${areas}
+            ${i.affected?`<span class="inc-tag">👥 ${escHtml(i.affected)}</span>`:''}
+            <span class="inc-date">📅 ${fmtIncDate(i.date)}</span>
+          </div>
+        </div>
+        <div class="inc-actions">
+          <select class="inc-status ${stClass(i.status)}" onchange="changeStatus('${i.id}',this.value)">${opts}</select>
+          <button class="inc-del" title="Delete" onclick="removeIncident('${i.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function changeStatus(id,status){
+  try{
+    const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
+    const i=_incidents.findIndex(x=>x.id===id); if(i>=0)_incidents[i]=d;
+    renderIncidents();
+  }catch(err){ alert('Не удалось обновить статус: '+err.message); loadIncidents(true); }
+}
+async function removeIncident(id){
+  if(!confirm('Удалить инцидент безвозвратно?')) return;
+  try{
+    const r=await fetch('/api/incidents?id='+encodeURIComponent(id),{method:'DELETE'});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
+    _incidents=_incidents.filter(x=>x.id!==id);
+    renderIncidents();
+  }catch(err){ alert('Не удалось удалить: '+err.message); }
+}
+
+loadIncidents(); // populate the sidebar badge on first load
 
 // ── CREATE TASK ──────────────────────────────────────────────────────
 (function initTaskForm(){
