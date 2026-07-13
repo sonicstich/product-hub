@@ -133,8 +133,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .field{margin-bottom:18px}
 .field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
 .req{color:#ef4444;margin-left:2px}
-.inp,.txa,.sel{width:100%;padding:9px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s;background:white}
-.inp:focus,.txa:focus,.sel:focus{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.inp,.txa{width:100%;padding:9px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s;background:white}
+.inp:focus,.txa:focus{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
 .txa{resize:vertical;min-height:88px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -164,6 +164,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .critical-box{display:none;margin-top:10px;padding:12px 14px;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:8px;animation:fadeIn .15s ease}
 .critical-box.show{display:block}
 .critical-box label{color:#b91c1c!important}
+.prio-hint{font-size:12px;color:#9ca3af;margin-top:8px;min-height:15px;transition:color .15s}
+.prio-group.err .prio-lbl span{border-color:#fca5a5}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 .area-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
@@ -478,13 +480,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div class="field">
               <label>Priority<span class="req">*</span></label>
-              <select class="sel" id="inc-priority" required>
-                <option value="">Select priority...</option>
-                <option value="Critical">🔴 Critical — service is down</option>
-                <option value="High">🟠 High — core flow is broken</option>
-                <option value="Medium">🟡 Medium — partial malfunction</option>
-                <option value="Low">🟢 Low — cosmetic / minor issue</option>
-              </select>
+              <div class="prio-group" id="inc-prio-group">
+                <label class="prio-lbl"><input type="radio" name="inc-priority" value="Low" onchange="incPrio(this)"><span class="p-low">Low</span></label>
+                <label class="prio-lbl"><input type="radio" name="inc-priority" value="Medium" onchange="incPrio(this)"><span class="p-medium">Medium</span></label>
+                <label class="prio-lbl"><input type="radio" name="inc-priority" value="High" onchange="incPrio(this)"><span class="p-high">High</span></label>
+                <label class="prio-lbl"><input type="radio" name="inc-priority" value="Critical" onchange="incPrio(this)"><span class="p-critical">🔴 Critical</span></label>
+              </div>
+              <div class="prio-hint" id="inc-prio-hint"></div>
             </div>
             <div class="field">
               <label>Related to<span class="req">*</span></label>
@@ -1013,18 +1015,33 @@ function renderIncImages(){
 }
 function removeIncImage(i){_incImages.splice(i,1);renderIncImages();}
 
+// Priority segmented control — show the selected level's meaning, clear error state.
+const INC_PRIO_DESC={Critical:'Service is down',High:'Core flow is broken',Medium:'Partial malfunction',Low:'Cosmetic / minor issue'};
+function incPrio(radio){
+  const h=document.getElementById('inc-prio-hint');
+  h.textContent=INC_PRIO_DESC[radio.value]||'';
+  h.style.color='#9ca3af';
+  document.getElementById('inc-prio-group').classList.remove('err');
+}
+
 async function handleSubmit(e){
   e.preventDefault();
   const btn=e.target.querySelector('.btn-sub');
   const title=document.getElementById('inc-title').value.trim();
   const description=document.getElementById('inc-desc').value.trim();
-  const priority=document.getElementById('inc-priority').value;
+  const priority=document.querySelector('#inc-prio-group input:checked')?.value||'';
   const affected=document.getElementById('inc-users').value;
   const date=document.getElementById('inc-date').value;
   let areas=[...document.querySelectorAll('#inc-areas .chip.on')].map(c=>c.textContent.trim());
   const other=document.getElementById('inc-other').value.trim();
   if(areas.includes('Other')){ areas=areas.filter(a=>a!=='Other'); if(other) areas.push(other); }
   const images=_incImages.map(im=>im.dataUrl);
+  if(!priority){
+    const g=document.getElementById('inc-prio-group'), h=document.getElementById('inc-prio-hint');
+    g.classList.add('err'); h.textContent='Please choose a priority'; h.style.color='#dc2626';
+    g.scrollIntoView({block:'center',behavior:'smooth'});
+    return;
+  }
   btn.disabled=true; const t0=btn.textContent; btn.textContent='Submitting…';
   try{
     const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,priority,affected,date,areas,images})});
@@ -1044,6 +1061,8 @@ function resetForm(){
   document.getElementById('other-field').style.display='none';
   document.getElementById('success-box').style.display='none';
   _incImages=[]; renderIncImages();
+  document.getElementById('inc-prio-hint').textContent='';
+  document.getElementById('inc-prio-group').classList.remove('err');
 }
 
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
