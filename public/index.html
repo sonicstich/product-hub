@@ -141,7 +141,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip{display:flex;align-items:center;gap:5px;padding:6px 13px;border:1.5px solid #e5e7eb;border-radius:20px;cursor:pointer;font-size:13px;color:#374151;transition:all .15s;user-select:none}
 .chip:hover{border-color:#E07532;color:#E07532}
 .chip input{display:none}
-.chip.sel{background:rgba(224,117,50,.12);border-color:#E07532;color:#E07532;font-weight:600}
+.chip.on{background:rgba(224,117,50,.12);border-color:#E07532;color:#E07532;font-weight:600}
 .btn-sub{width:100%;padding:12px;background:#E07532;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s;margin-top:6px}
 .btn-sub:hover{background:#C8641C}
 .success{display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:32px;text-align:center}
@@ -957,7 +957,7 @@ document.addEventListener('click',()=>{Object.keys(_DP).forEach(k=>dpHide(k));})
 
 // ── FORM ────────────────────────────────────────────────────────────
 dpCreate('inc',todayKey,null);
-function toggleChip(cb){cb.closest('.chip').classList.toggle('sel',cb.checked);}
+function toggleChip(cb){cb.closest('.chip').classList.toggle('on',cb.checked);}
 function toggleOther(cb){document.getElementById('other-field').style.display=cb.checked?'block':'none';}
 
 // ── INCIDENT SCREENSHOTS ─────────────────────────────────────────────
@@ -1021,7 +1021,7 @@ async function handleSubmit(e){
   const priority=document.getElementById('inc-priority').value;
   const affected=document.getElementById('inc-users').value;
   const date=document.getElementById('inc-date').value;
-  let areas=[...document.querySelectorAll('#inc-areas .chip.sel')].map(c=>c.textContent.trim());
+  let areas=[...document.querySelectorAll('#inc-areas .chip.on')].map(c=>c.textContent.trim());
   const other=document.getElementById('inc-other').value.trim();
   if(areas.includes('Other')){ areas=areas.filter(a=>a!=='Other'); if(other) areas.push(other); }
   const images=_incImages.map(im=>im.dataUrl);
@@ -1040,7 +1040,7 @@ function resetForm(){
   const f=document.getElementById('inc-form');
   f.reset();f.style.display='block';
   dpReset('inc',todayKey,null);
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   document.getElementById('other-field').style.display='none';
   document.getElementById('success-box').style.display='none';
   _incImages=[]; renderIncImages();
