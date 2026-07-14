@@ -471,8 +471,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- INCIDENT -->
     <div id="page-incident" class="page">
-      <div class="form-wrap">
-        <div class="form-card">
+      <div class="form-wrap" id="inc-form-home">
+        <div class="form-card" id="inc-form-card">
           <div class="fh">
             <h2 id="inc-form-heading">Report an Incident</h2>
             <p id="inc-form-sub">Submit this form to notify the team immediately</p>
@@ -579,14 +579,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- OPEN INCIDENTS -->
     <div id="page-incidents" class="page">
-      <div class="inc-toolbar">
-        <div class="inc-filters" id="inc-filters"></div>
-        <button class="inc-new-btn" onclick="go('incident',document.getElementById('nav-incident'))">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New incident
-        </button>
+      <div id="inc-browse">
+        <div class="inc-toolbar">
+          <div class="inc-filters" id="inc-filters"></div>
+          <button class="inc-new-btn" onclick="go('incident',document.getElementById('nav-incident'))">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New incident
+          </button>
+        </div>
+        <div class="inc-list" id="inc-list"><div class="inc-empty">Loading…</div></div>
       </div>
-      <div class="inc-list" id="inc-list"><div class="inc-empty">Loading…</div></div>
+      <div class="form-wrap" id="inc-edit-slot" style="display:none"></div>
     </div>
 
     <!-- CREATE TASK -->
@@ -913,6 +916,14 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('co
 const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task'};
 const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident'};
 function go(id,el){
+  // Editing an incident relocates the shared form into Open Incidents. If the
+  // user jumps straight to "Report Incident" instead of using Cancel/Save,
+  // treat it as discarding that edit so the form isn't left stranded there.
+  if(id==='incident' && typeof _editIncidentId!=='undefined' && _editIncidentId!=null){
+    _editIncidentId=null;
+    resetForm();
+    returnIncidentFormHome();
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -1161,7 +1172,8 @@ async function handleSubmit(e){
       const idx=_incidents.findIndex(x=>x.id===_editIncidentId); if(idx>=0)_incidents[idx]=d;
       _editIncidentId=null;
       setIncidentFormMode(false);
-      go('incidents',document.getElementById('nav-incidents'));
+      returnIncidentFormHome();
+      renderIncidents();
     }else{
       const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const d=await r.json().catch(()=>({}));
@@ -1277,6 +1289,19 @@ function setIncidentFormMode(editing){
   document.getElementById('inc-cancel-edit').style.display=editing?'inline-block':'none';
 }
 
+// Editing happens in place on Open Incidents — the actual #inc-form-card node
+// (heading + full form + success/error boxes) is relocated into a slot on this
+// page instead of navigating to the separate Report Incident page, so filling
+// it out reuses every widget (date picker, chips, images, tasks) as-is.
+function moveIncidentFormTo(slotId){
+  document.getElementById(slotId).appendChild(document.getElementById('inc-form-card'));
+}
+function returnIncidentFormHome(){
+  document.getElementById('inc-form-home').appendChild(document.getElementById('inc-form-card'));
+  document.getElementById('inc-edit-slot').style.display='none';
+  document.getElementById('inc-browse').style.display='block';
+}
+
 function startEdit(id){
   const inc=_incidents.find(x=>x.id===id);
   if(!inc) return;
@@ -1285,13 +1310,16 @@ function startEdit(id){
   setIncidentFormMode(true);
   document.getElementById('inc-form').style.display='block';
   document.getElementById('success-box').style.display='none';
-  go('incident',document.getElementById('nav-incident'));
+  moveIncidentFormTo('inc-edit-slot');
+  document.getElementById('inc-browse').style.display='none';
+  document.getElementById('inc-edit-slot').style.display='block';
+  document.getElementById('inc-edit-slot').scrollIntoView({block:'start'});
 }
 
 function cancelIncidentEdit(){
   _editIncidentId=null;
   resetForm();
-  go('incidents',document.getElementById('nav-incidents'));
+  returnIncidentFormHome();
 }
 
 // Prefill every field of the Report Incident form from an existing incident.
