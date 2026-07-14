@@ -300,6 +300,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nav-badge{margin-left:auto;background:#E07532;color:#fff;font-size:10.5px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0}
 .nav-badge:empty{display:none}
 .collapsed .nav-badge{display:none}
+
+/* ── DOCUMENTATION ── */
+.docs-list{max-width:640px;display:flex;flex-direction:column;gap:10px}
+.doc-section{background:#fff;border:1px solid #ece8e1;border-radius:12px;overflow:hidden;transition:border-color .15s}
+.doc-section.open{border-color:#e5ddd0}
+.doc-section-head{display:flex;align-items:center;gap:11px;padding:15px 18px;cursor:pointer;user-select:none}
+.doc-section-icon{font-size:17px;line-height:1;flex-shrink:0}
+.doc-section-label{font-size:14px;font-weight:600;color:#141210}
+.doc-section-count{font-size:11px;font-weight:700;color:#9ca3af;background:#f3f4f6;border-radius:9px;padding:1px 7px;min-width:14px;text-align:center}
+.doc-chevron{margin-left:auto;color:#c4c9d0;flex-shrink:0;transition:transform .18s}
+.doc-section.open .doc-chevron{transform:rotate(90deg);color:#E07532}
+.doc-section-body{display:none;padding:0 18px 16px;flex-direction:column;gap:6px}
+.doc-section.open .doc-section-body{display:flex}
+.doc-link{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:8px;background:#faf9f7;color:#374151;text-decoration:none;font-size:13px;font-weight:500;transition:background .15s}
+.doc-link:hover{background:#f3ede4;color:#E07532}
+.doc-empty{font-size:12.5px;color:#c4c9d0;padding:2px 2px 4px}
 </style>
 </head>
 <body>
@@ -358,10 +374,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="nav-section">
       <div class="nav-section-label">Documentation</div>
-      <div class="nav-item" onclick="window.open('https://www.notion.so/Manual-bank-transfer-36ba512e261980909f11f5695b0c3ff1','_blank')">
+      <div class="nav-item" id="nav-docs" onclick="go('docs',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-        <span class="nav-label">Manual Bank Transfer</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <span class="nav-label">Documentation</span>
       </div>
     </div>
   </nav>
@@ -741,6 +756,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
 
+    <!-- DOCUMENTATION -->
+    <div id="page-docs" class="page">
+      <div class="docs-list" id="docs-list"></div>
+    </div>
 
   </div>
 </div>
@@ -922,8 +941,8 @@ renderSprints(currentAnchor());
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task'};
-const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',docs:'Documentation'};
+const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',docs:'nav-docs'};
 function go(id,el){
   // Editing an incident relocates the shared form into Open Incidents. If the
   // user jumps straight to "Report Incident" instead of using Cancel/Save,
@@ -1484,6 +1503,53 @@ function resetTaskForm(){
   const minStr=toKey(minD);
   dpReset('due',minStr,minStr);
 }
+
+// ── DOCUMENTATION ─────────────────────────────────────────────────────
+// Static reference list grouped by product area. Categories start empty —
+// add {title,url} entries to a section's `docs` array as documentation
+// becomes available.
+const DOC_SECTIONS=[
+  {key:'auth',       icon:'🔐', label:'Authorization', docs:[]},
+  {key:'kyc',        icon:'🪪', label:'KYC', docs:[]},
+  {key:'deposits',   icon:'💰', label:'Deposits', docs:[
+    {title:'Manual Bank Transfer', url:'https://www.notion.so/Manual-bank-transfer-36ba512e261980909f11f5695b0c3ff1'},
+  ]},
+  {key:'withdrawals',icon:'💸', label:'Withdrawals', docs:[]},
+  {key:'trading',    icon:'📈', label:'Trading', docs:[]},
+  {key:'portfolio',  icon:'📊', label:'Portfolio', docs:[]},
+  {key:'promo',      icon:'🎁', label:'Promo Codes & Bonuses', docs:[]},
+];
+let _docsOpen=new Set();
+
+function toggleDocSection(key){
+  if(_docsOpen.has(key)) _docsOpen.delete(key); else _docsOpen.add(key);
+  renderDocs();
+}
+
+function renderDocs(){
+  const list=document.getElementById('docs-list');
+  if(!list) return;
+  list.innerHTML=DOC_SECTIONS.map(s=>{
+    const open=_docsOpen.has(s.key);
+    const body=s.docs.length
+      ? s.docs.map(d=>`<a class="doc-link" href="${escHtml(d.url)}" target="_blank">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>${escHtml(d.title)}</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.4;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>`).join('')
+      : `<div class="doc-empty">No documents yet</div>`;
+    return `<div class="doc-section ${open?'open':''}">
+      <div class="doc-section-head" onclick="toggleDocSection('${s.key}')">
+        <span class="doc-section-icon">${s.icon}</span>
+        <span class="doc-section-label">${s.label}</span>
+        <span class="doc-section-count">${s.docs.length||''}</span>
+        <svg class="doc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="doc-section-body">${body}</div>
+    </div>`;
+  }).join('');
+}
+renderDocs();
 </script>
 </body>
 </html>
