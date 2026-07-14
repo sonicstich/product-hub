@@ -182,6 +182,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dp-wrap:hover .dp-trigger,.dp-trigger.open{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.08)}
 .dp-trigger-main{font-size:14px;font-weight:600;color:#111827}
 .dp-trigger-sub{font-size:11.5px;color:#9ca3af;margin-top:2px}
+/* Match the height of the custom date-picker trigger it sits next to, and drop the
+   native number-input spinner arrows so it fits the app's flat, custom-control look. */
+#inc-users{padding:11px 13px;-moz-appearance:textfield}
+#inc-users::-webkit-inner-spin-button,#inc-users::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .dp-popup{position:absolute;top:calc(100% + 8px);left:0;z-index:300;background:white;border:1.5px solid #e8e5e0;border-radius:14px;padding:16px 14px 14px;box-shadow:0 16px 48px rgba(20,18,16,.14),0 2px 8px rgba(20,18,16,.06);width:294px;animation:dpIn .13s ease}
 @keyframes dpIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 .dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
