@@ -277,6 +277,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-imgs{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
 .inc-imgs img{width:52px;height:52px;object-fit:cover;border-radius:7px;border:1px solid #ece8e1;cursor:zoom-in;transition:transform .15s}
 .inc-imgs img:hover{transform:scale(1.06)}
+.lightbox{position:fixed;inset:0;background:rgba(10,9,8,.88);display:none;align-items:center;justify-content:center;z-index:1000;padding:48px;cursor:zoom-out}
+.lightbox.show{display:flex}
+.lightbox img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 24px 64px rgba(0,0,0,.5);cursor:default}
+.lightbox-close{position:fixed;top:22px;right:26px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.25);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.lightbox-close:hover{background:rgba(255,255,255,.22)}
 .nav-badge{margin-left:auto;background:#E07532;color:#fff;font-size:10.5px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0}
 .nav-badge:empty{display:none}
 .collapsed .nav-badge{display:none}
@@ -702,6 +707,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- ── IMAGE LIGHTBOX ── -->
+<div class="lightbox" id="lightbox" onclick="if(event.target.id==='lightbox')closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
 <script>
 // ── SPRINT DATA ──────────────────────────────────────────────────────
 // ── SPRINT ANCHOR ────────────────────────────────────────────────────
@@ -1036,9 +1047,24 @@ async function handleIncImages(input){
 function renderIncImages(){
   document.getElementById('inc-img-list').innerHTML=_incImages.map((im,i)=>`
     <div class="inc-img-item">
-      <img src="${im.dataUrl}" onclick="window.open('${im.dataUrl}','_blank')">
+      <img src="${im.dataUrl}" onclick="openLightbox(_incImages[${i}].dataUrl)">
       <button type="button" class="inc-img-remove" onclick="removeIncImage(${i})">✕</button>
     </div>`).join('');
+}
+// Full-size preview overlay — data: URLs can't be opened via window.open() in a new
+// tab (browsers block top-level navigation to data URIs), so show them in-page instead.
+function openLightbox(src){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lightbox-img').src='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+function openLightboxFrom(id,idx){
+  const inc=_incidents.find(x=>x.id===id);
+  if(inc && inc.images && inc.images[idx]) openLightbox(inc.images[idx]);
 }
 function removeIncImage(i){_incImages.splice(i,1);renderIncImages();}
 
@@ -1147,7 +1173,7 @@ function renderIncidents(){
     const areas=(i.areas||[]).map(a=>`<span class="inc-tag">${escHtml(a)}</span>`).join('');
     const PLAT_ICON={iOS:'🍎',Android:'🤖'};
     const plats=(i.platforms||[]).map(p=>`<span class="inc-tag inc-plat">${PLAT_ICON[p]||''} ${escHtml(p)}</span>`).join('');
-    const imgs=(i.images||[]).length?`<div class="inc-imgs">${i.images.map(src=>`<img src="${escHtml(src)}" onclick="window.open('${escHtml(src)}','_blank')">`).join('')}</div>`:'';
+    const imgs=(i.images||[]).length?`<div class="inc-imgs">${i.images.map((src,ix)=>`<img src="${escHtml(src)}" onclick="openLightboxFrom('${i.id}',${ix})">`).join('')}</div>`:'';
     return `<div class="inc-card ${i.status==='Resolved'?'resolved':''}">
       <div class="inc-top">
         <div style="flex:1;min-width:0">
