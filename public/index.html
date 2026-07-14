@@ -274,16 +274,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-tasks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .inc-task-link{font-size:11.5px;font-weight:700;color:#E07532;text-decoration:none;padding:4px 10px;background:rgba(224,117,50,.08);border-radius:6px;border:1px solid rgba(224,117,50,.2);transition:background .15s}
 .inc-task-link:hover{background:rgba(224,117,50,.16)}
-.inc-card.editing{background:#fff;border:1.5px solid #E07532;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(20,18,16,.04)}
-.inc-edit-field{margin-bottom:16px}
-.inc-edit-field label{display:block;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .inc-task-edit-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .inc-task-edit-item{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#f9fafb;border-radius:7px;font-size:12.5px}
 .inc-task-edit-item span{font-weight:700;color:#6b7280;flex-shrink:0}
 .inc-task-edit-link{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#E07532;text-decoration:none}
 .inc-task-edit-item button{border:none;background:none;color:#c4c9d0;cursor:pointer;font-size:12px;flex-shrink:0;padding:0}
 .inc-task-edit-item button:hover{color:#ef4444}
-.inc-edit-actions{display:flex;gap:10px;margin-top:4px}
 .inc-empty{text-align:center;padding:56px 20px;color:#9ca3af;font-size:14px}
 .inc-empty .ico{font-size:38px;margin-bottom:10px}
 .inc-img-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -477,7 +473,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="page-incident" class="page">
       <div class="form-wrap">
         <div class="form-card">
-          <div class="fh"><h2>Report an Incident</h2><p>Submit this form to notify the team immediately</p></div>
+          <div class="fh">
+            <h2 id="inc-form-heading">Report an Incident</h2>
+            <p id="inc-form-sub">Submit this form to notify the team immediately</p>
+            <a href="#" id="inc-cancel-edit" style="display:none;font-size:13px;color:#E07532;font-weight:600" onclick="event.preventDefault();cancelIncidentEdit()">← Cancel edit, discard changes</a>
+          </div>
           <form id="inc-form" onsubmit="handleSubmit(event)">
             <div class="field">
               <label>Incident title<span class="req">*</span></label>
@@ -562,7 +562,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="inc-task-edit-list" id="inc-task-list" style="margin-top:10px"></div>
               </div>
             </div>
-            <button type="submit" class="btn-sub">Submit Incident Report</button>
+            <button type="submit" class="btn-sub" id="inc-submit-btn">Submit Incident Report</button>
           </form>
           <div class="success" id="success-box">
             <div class="ico">✅</div>
@@ -1151,13 +1151,24 @@ async function handleSubmit(e){
     g.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
-  btn.disabled=true; const t0=btn.textContent; btn.textContent='Submitting…';
+  btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks})});
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(d.error||'Failed to save');
-    document.getElementById('inc-form').style.display='none';
-    document.getElementById('success-box').style.display='block';
+    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks};
+    if(_editIncidentId){
+      const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.error||'Failed to save');
+      const idx=_incidents.findIndex(x=>x.id===_editIncidentId); if(idx>=0)_incidents[idx]=d;
+      _editIncidentId=null;
+      setIncidentFormMode(false);
+      go('incidents',document.getElementById('nav-incidents'));
+    }else{
+      const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.error||'Failed to save');
+      document.getElementById('inc-form').style.display='none';
+      document.getElementById('success-box').style.display='block';
+    }
     _incidentsDirty=true;
   }catch(err){ alert('Could not save incident: '+err.message); }
   finally{ btn.disabled=false; btn.textContent=t0; }
@@ -1175,6 +1186,7 @@ function resetForm(){
   document.getElementById('inc-prio-group').classList.remove('err');
   document.getElementById('inc-plat-hint').textContent='';
   document.getElementById('inc-platforms').classList.remove('err');
+  _editIncidentId=null; setIncidentFormMode(false);
 }
 
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
@@ -1219,7 +1231,6 @@ function renderIncidents(){
   else if(_incFilter!=='All') items=items.filter(i=>i.status===_incFilter);
   if(!items.length){ list.innerHTML=`<div class="inc-empty"><div class="ico">🎉</div>No incidents${_incFilter==='Active'?' — all clear':''}</div>`; return; }
   list.innerHTML=items.map(i=>{
-    if(_editingId===i.id) return renderIncidentEdit(i);
     const opts=INC_STATUSES.map(s=>`<option value="${s}" ${s===i.status?'selected':''}>${s}</option>`).join('');
     const areas=(i.areas||[]).map(a=>`<span class="inc-tag">${escHtml(a)}</span>`).join('');
     const PLAT_ICON={iOS:'🍎',Android:'🤖'};
@@ -1252,79 +1263,77 @@ function renderIncidents(){
 }
 
 // ── EDIT INCIDENT ─────────────────────────────────────────────────────
-// An incident is often reported before its fixing task exists in Notion, so
-// title/description/linked-tasks need to stay editable afterward. _editDraft
-// holds unsaved edits; re-renders (e.g. adding a task) read the live input
-// values first so in-progress typing survives.
-let _editingId=null, _editDraft=null;
+// An incident is often reported before its fixing task exists in Notion, and
+// any field (not just title/description) may need a later correction — so
+// editing reuses the full Report Incident form instead of a stripped-down
+// one: fillIncidentForm() prefills every field, submit does a PATCH with
+// everything instead of a POST when _editIncidentId is set.
+let _editIncidentId=null;
+
+function setIncidentFormMode(editing){
+  document.getElementById('inc-form-heading').textContent=editing?'Edit Incident':'Report an Incident';
+  document.getElementById('inc-form-sub').textContent=editing?'Update any field below and save your changes':'Submit this form to notify the team immediately';
+  document.getElementById('inc-submit-btn').textContent=editing?'Save Changes':'Submit Incident Report';
+  document.getElementById('inc-cancel-edit').style.display=editing?'inline-block':'none';
+}
 
 function startEdit(id){
   const inc=_incidents.find(x=>x.id===id);
   if(!inc) return;
-  _editingId=id;
-  _editDraft={title:inc.title, description:inc.description||'', tasks:[...(inc.tasks||[])]};
-  renderIncidents();
+  _editIncidentId=id;
+  fillIncidentForm(inc);
+  setIncidentFormMode(true);
+  document.getElementById('inc-form').style.display='block';
+  document.getElementById('success-box').style.display='none';
+  go('incident',document.getElementById('nav-incident'));
 }
-function cancelEdit(){ _editingId=null; _editDraft=null; renderIncidents(); }
-function syncDraftFromInputs(){
-  const t=document.getElementById('edit-title-input'), d=document.getElementById('edit-desc-input');
-  if(t) _editDraft.title=t.value;
-  if(d) _editDraft.description=d.value;
+
+function cancelIncidentEdit(){
+  _editIncidentId=null;
+  resetForm();
+  go('incidents',document.getElementById('nav-incidents'));
 }
-function draftAddTask(){
-  syncDraftFromInputs();
-  const input=document.getElementById('edit-task-input');
-  const url=input.value.trim();
-  if(!url) return;
-  if(!/^https?:\/\//i.test(url)){ alert('Please paste a valid link (starting with http:// or https://)'); return; }
-  _editDraft.tasks.push(url);
-  renderIncidents();
-}
-function draftRemoveTask(ix){ syncDraftFromInputs(); _editDraft.tasks.splice(ix,1); renderIncidents(); }
-async function saveEdit(id){
-  const title=document.getElementById('edit-title-input').value.trim();
-  const description=document.getElementById('edit-desc-input').value.trim();
-  if(!title){ alert('Title is required'); return; }
-  const btn=document.getElementById('edit-save-btn');
-  btn.disabled=true; const t0=btn.textContent; btn.textContent='Saving…';
-  try{
-    const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,title,description,tasks:_editDraft.tasks})});
-    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
-    const idx=_incidents.findIndex(x=>x.id===id); if(idx>=0)_incidents[idx]=d;
-    _editingId=null; _editDraft=null;
-    renderIncidents();
-  }catch(err){ alert('Could not save changes: '+err.message); btn.disabled=false; btn.textContent=t0; }
-}
-function renderIncidentEdit(i){
-  const d=_editDraft;
-  const taskItems=d.tasks.map((url,ix)=>`
-    <div class="inc-task-edit-item">
-      <span>Task ${ix+1}</span>
-      <a href="${escHtml(url)}" target="_blank" class="inc-task-edit-link">${escHtml(url)}</a>
-      <button type="button" onclick="draftRemoveTask(${ix})">✕</button>
-    </div>`).join('');
-  return `<div class="inc-card editing">
-    <div class="inc-edit-field">
-      <label>Title</label>
-      <input class="inp" id="edit-title-input" value="${escHtml(d.title)}">
-    </div>
-    <div class="inc-edit-field">
-      <label>Description</label>
-      <textarea class="txa" id="edit-desc-input" rows="3">${escHtml(d.description)}</textarea>
-    </div>
-    <div class="inc-edit-field">
-      <label>Linked Notion tasks</label>
-      <div class="inc-task-edit-list">${taskItems}</div>
-      <div style="display:flex;gap:8px">
-        <input class="inp" id="edit-task-input" placeholder="Paste a Notion task link…" onkeydown="if(event.key==='Enter'){event.preventDefault();draftAddTask();}">
-        <button type="button" class="btn-again" style="flex-shrink:0;padding:9px 16px" onclick="draftAddTask()">+ Add</button>
-      </div>
-    </div>
-    <div class="inc-edit-actions">
-      <button type="button" class="btn-sub" id="edit-save-btn" style="width:auto;padding:9px 20px;margin-top:0" onclick="saveEdit('${i.id}')">Save</button>
-      <button type="button" class="btn-again" onclick="cancelEdit()">Cancel</button>
-    </div>
-  </div>`;
+
+// Prefill every field of the Report Incident form from an existing incident.
+const FIXED_AREAS=['Trading','Deposits','Withdrawals','Authorization','KYC'];
+function fillIncidentForm(inc){
+  document.getElementById('inc-title').value=inc.title||'';
+  document.getElementById('inc-desc').value=inc.description||'';
+  document.getElementById('inc-users').value=inc.affected??'';
+  dpReset('inc', inc.date||todayKey, null);
+
+  document.querySelectorAll('#inc-prio-group input').forEach(r=>{
+    r.checked=r.value===inc.priority;
+    if(r.checked) incPrio(r);
+  });
+
+  document.querySelectorAll('#inc-platforms input').forEach(cb=>{
+    const on=(inc.platforms||[]).includes(cb.value);
+    cb.checked=on; cb.closest('.chip').classList.toggle('on',on);
+  });
+  document.getElementById('inc-platforms').classList.remove('err');
+  document.getElementById('inc-plat-hint').textContent='';
+
+  const areas=inc.areas||[];
+  let otherChip=null;
+  document.querySelectorAll('#inc-areas .chip').forEach(chip=>{
+    const label=chip.textContent.trim();
+    if(label==='Other'){ otherChip=chip; return; }
+    const on=areas.includes(label);
+    chip.querySelector('input').checked=on; chip.classList.toggle('on',on);
+  });
+  const extra=areas.filter(a=>!FIXED_AREAS.includes(a));
+  if(otherChip){
+    otherChip.querySelector('input').checked=!!extra.length;
+    otherChip.classList.toggle('on',!!extra.length);
+  }
+  document.getElementById('other-field').style.display=extra.length?'block':'none';
+  document.getElementById('inc-other').value=extra.join(', ');
+
+  _incImages=(inc.images||[]).map((dataUrl,ix)=>({name:'image-'+(ix+1),dataUrl}));
+  renderIncImages();
+  _incTasks=[...(inc.tasks||[])];
+  renderIncTaskList();
 }
 
 async function changeStatus(id,status){
