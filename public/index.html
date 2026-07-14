@@ -142,6 +142,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip:hover{border-color:#E07532;color:#E07532}
 .chip input{display:none}
 .chip.on{background:rgba(224,117,50,.12);border-color:#E07532;color:#E07532;font-weight:600}
+.chips.err .chip{border-color:#fca5a5}
 .btn-sub{width:100%;padding:12px;background:#E07532;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s;margin-top:6px}
 .btn-sub:hover{background:#C8641C}
 .success{display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:32px;text-align:center}
@@ -248,6 +249,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-desc{font-size:13px;color:#6b7280;line-height:1.55;margin-top:5px;white-space:pre-wrap;overflow-wrap:anywhere}
 .inc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .inc-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#f3f4f6;color:#4b5563}
+.inc-tag.inc-plat{background:#fff;border:1px solid #d1d5db;color:#374151}
 .inc-pri{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 .inc-pri.Critical{background:#fee2e2;color:#b91c1c}
 .inc-pri.High{background:#ffedd5;color:#c2410c}
@@ -487,6 +489,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <label class="prio-lbl"><input type="radio" name="inc-priority" value="Critical" onchange="incPrio(this)"><span class="p-critical">🔴 Critical</span></label>
               </div>
               <div class="prio-hint" id="inc-prio-hint"></div>
+            </div>
+            <div class="field">
+              <label>Platform<span class="req">*</span></label>
+              <div class="chips" id="inc-platforms">
+                <label class="chip"><input type="checkbox" value="iOS" onchange="togglePlat(this)">🍎 iOS</label>
+                <label class="chip"><input type="checkbox" value="Android" onchange="togglePlat(this)">🤖 Android</label>
+              </div>
+              <div class="prio-hint" id="inc-plat-hint"></div>
             </div>
             <div class="field">
               <label>Related to<span class="req">*</span></label>
@@ -961,6 +971,11 @@ document.addEventListener('click',()=>{Object.keys(_DP).forEach(k=>dpHide(k));})
 dpCreate('inc',todayKey,null);
 function toggleChip(cb){cb.closest('.chip').classList.toggle('on',cb.checked);}
 function toggleOther(cb){document.getElementById('other-field').style.display=cb.checked?'block':'none';}
+function togglePlat(cb){
+  toggleChip(cb);
+  document.getElementById('inc-platforms').classList.remove('err');
+  document.getElementById('inc-plat-hint').textContent='';
+}
 
 // ── INCIDENT SCREENSHOTS ─────────────────────────────────────────────
 // Compressed client-side (canvas → JPEG) and stored as data URLs, since the
@@ -1035,6 +1050,7 @@ async function handleSubmit(e){
   let areas=[...document.querySelectorAll('#inc-areas .chip.on')].map(c=>c.textContent.trim());
   const other=document.getElementById('inc-other').value.trim();
   if(areas.includes('Other')){ areas=areas.filter(a=>a!=='Other'); if(other) areas.push(other); }
+  const platforms=[...document.querySelectorAll('#inc-platforms .chip.on input')].map(i=>i.value);
   const images=_incImages.map(im=>im.dataUrl);
   if(!priority){
     const g=document.getElementById('inc-prio-group'), h=document.getElementById('inc-prio-hint');
@@ -1042,9 +1058,15 @@ async function handleSubmit(e){
     g.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
+  if(!platforms.length){
+    const g=document.getElementById('inc-platforms'), h=document.getElementById('inc-plat-hint');
+    g.classList.add('err'); h.textContent='Please choose at least one platform'; h.style.color='#dc2626';
+    g.scrollIntoView({block:'center',behavior:'smooth'});
+    return;
+  }
   btn.disabled=true; const t0=btn.textContent; btn.textContent='Submitting…';
   try{
-    const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,priority,affected,date,areas,images})});
+    const r=await fetch('/api/incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,priority,affected,date,areas,platforms,images})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(d.error||'Failed to save');
     document.getElementById('inc-form').style.display='none';
@@ -1063,6 +1085,8 @@ function resetForm(){
   _incImages=[]; renderIncImages();
   document.getElementById('inc-prio-hint').textContent='';
   document.getElementById('inc-prio-group').classList.remove('err');
+  document.getElementById('inc-plat-hint').textContent='';
+  document.getElementById('inc-platforms').classList.remove('err');
 }
 
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
@@ -1109,6 +1133,8 @@ function renderIncidents(){
   list.innerHTML=items.map(i=>{
     const opts=INC_STATUSES.map(s=>`<option value="${s}" ${s===i.status?'selected':''}>${s}</option>`).join('');
     const areas=(i.areas||[]).map(a=>`<span class="inc-tag">${escHtml(a)}</span>`).join('');
+    const PLAT_ICON={iOS:'🍎',Android:'🤖'};
+    const plats=(i.platforms||[]).map(p=>`<span class="inc-tag inc-plat">${PLAT_ICON[p]||''} ${escHtml(p)}</span>`).join('');
     const imgs=(i.images||[]).length?`<div class="inc-imgs">${i.images.map(src=>`<img src="${escHtml(src)}" onclick="window.open('${escHtml(src)}','_blank')">`).join('')}</div>`:'';
     return `<div class="inc-card ${i.status==='Resolved'?'resolved':''}">
       <div class="inc-top">
@@ -1117,6 +1143,7 @@ function renderIncidents(){
           ${i.description?`<div class="inc-desc">${escHtml(i.description)}</div>`:''}
           <div class="inc-meta">
             <span class="inc-pri ${escHtml(i.priority)}">${escHtml(i.priority)}</span>
+            ${plats}
             ${areas}
             ${i.affected?`<span class="inc-tag">👥 ${escHtml(i.affected)}</span>`:''}
             <span class="inc-date">📅 ${fmtIncDate(i.date)}</span>
