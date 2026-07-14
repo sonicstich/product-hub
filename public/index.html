@@ -874,14 +874,22 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('co
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
 const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task'};
+const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident'};
 function go(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
+  if(!el) el=document.getElementById(NAV_ID[id]);
   if(el) el.classList.add('active');
   document.getElementById('bc').textContent=TITLES[id]||id;
+  if(location.hash!=='#'+id) location.hash=id;
   if(id==='incidents') loadIncidents();
 }
+// Keep the current page in the URL hash so a refresh (or back/forward, or a
+// bookmarked link) restores it instead of always dropping back to Home.
+function goFromHash(){ const id=location.hash.slice(1); go(TITLES[id]?id:'home'); }
+window.addEventListener('hashchange',goFromHash);
+goFromHash();
 
 // ── CUSTOM DATE PICKER ──────────────────────────────────────────────
 const _DP={};
