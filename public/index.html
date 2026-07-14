@@ -65,6 +65,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .about-text{font-size:14px;color:#6b7280;line-height:1.7}
 .about-text p{margin-bottom:10px}
 .about-text p:last-child{margin-bottom:0}
+.about-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+.about-list li{padding-left:18px;position:relative}
+.about-list li::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:#E07532;flex-shrink:0}
 .flow-steps{display:flex;flex-direction:column;gap:0;margin-top:14px}
 .flow-step{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid #f3f4f6}
 .flow-step:last-child{border-bottom:none}
@@ -399,8 +402,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="card">
           <h3>About this space</h3>
           <div class="about-text">
-            <p>Product Hub keeps the whole team aligned on release schedules and production issues — no need to chase people in Slack or dig through old messages.</p>
-            <p>Use <strong>Release Calendar</strong> to see upcoming sprint milestones. Use <strong>Report Incident</strong> to log a production issue with full context.</p>
+            <p>Here you can find:</p>
+            <ul class="about-list">
+              <li>Open Incidents — track and update ongoing issues</li>
+              <li>Create Task — send a new task to the product team</li>
+              <li>Report Incident — log a production issue with full context</li>
+              <li>Analytics — Metabase and Amplitude</li>
+              <li>Documentation — team guides and references</li>
+            </ul>
           </div>
           <div class="flow-steps">
             <div class="flow-step">
