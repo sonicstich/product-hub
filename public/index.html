@@ -264,6 +264,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-status{appearance:none;-webkit-appearance:none;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;border:1.5px solid transparent;cursor:pointer;outline:none}
 .inc-status.st-open{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
 .inc-status.st-inprogress{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.inc-status.st-waitingforrelease{background:#f3e8ff;color:#7c3aed;border-color:#e9d5ff}
 .inc-status.st-backlog{background:#f3f4f6;color:#4b5563;border-color:#e5e7eb}
 .inc-status.st-resolved{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
 .inc-del{width:30px;height:30px;border-radius:7px;border:1.5px solid #eee;background:#fff;color:#c4c9d0;cursor:pointer;font-size:12px;flex-shrink:0;transition:all .15s}
@@ -1129,7 +1130,7 @@ function resetForm(){
 
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
 // Must match the backend enum in lib/store.js.
-const INC_STATUSES=['Open','In Progress','Backlog','Resolved'];
+const INC_STATUSES=['Open','In Progress','Waiting for Release','Backlog','Resolved'];
 let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false;
 
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
