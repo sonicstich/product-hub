@@ -8,6 +8,7 @@ const path    = require('path');
 const fs      = require('fs');
 const { createTask, listTasks, getCurrentSprint, authorizeUrl, exchangeCode, oauthConfigured, notionReady, HttpError } = require('./lib/notion');
 const store = require('./lib/store');
+const { slackConfigured } = require('./lib/slack');
 
 // Load .env manually for local dev (Vercel injects env vars on its own).
 const envPath = path.join(__dirname, '.env');
@@ -77,6 +78,7 @@ app.get('/api/status', async (req, res) => {
     notionConfigured: !!process.env.NOTION_TOKEN,
     notionConnected,
     oauthConfigured: oauthConfigured(),
+    slackConfigured: slackConfigured(),
     storageConfigured: store.storageConfigured(),
   });
 });

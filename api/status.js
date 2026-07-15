@@ -1,6 +1,7 @@
 // Vercel serverless function → GET /api/status (health check)
 const { storageConfigured } = require('../lib/store');
 const { notionReady, oauthConfigured } = require('../lib/notion');
+const { slackConfigured } = require('../lib/slack');
 
 module.exports = async (req, res) => {
   let notionConnected = false;
@@ -10,6 +11,7 @@ module.exports = async (req, res) => {
     notionConfigured: !!process.env.NOTION_TOKEN,
     notionConnected,
     oauthConfigured: oauthConfigured(),
+    slackConfigured: slackConfigured(),
     storageConfigured: storageConfigured(),
   });
 };
