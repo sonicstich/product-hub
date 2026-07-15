@@ -6,7 +6,7 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
-const { createTask, listTasks, getCurrentSprint, HttpError } = require('./lib/notion');
+const { createTask, listTasks, getCurrentSprint, authorizeUrl, exchangeCode, oauthConfigured, notionReady, HttpError } = require('./lib/notion');
 const store = require('./lib/store');
 
 // Load .env manually for local dev (Vercel injects env vars on its own).
@@ -41,6 +41,24 @@ app.get('/api/current-sprint', async (req, res) => {
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
 });
 
+// Notion OAuth handshake (mirrors api/notion-connect.js + api/notion-callback.js)
+app.get('/api/notion-connect', (req, res) => {
+  if (!oauthConfigured()) return res.status(500).send('NOTION_OAUTH_CLIENT_ID / NOTION_OAUTH_CLIENT_SECRET are not set.');
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/notion-callback`;
+  res.redirect(authorizeUrl(redirectUri));
+});
+app.get('/api/notion-callback', async (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  try {
+    if (req.query.error) return res.status(400).send(`Authorization failed: ${req.query.error}`);
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/notion-callback`;
+    const data = await exchangeCode(req.query.code, redirectUri);
+    res.send(`✅ Connected to Notion workspace "${data.workspace_name || ''}". You can close this tab — Create Task now works.`);
+  } catch (err) {
+    res.status(err.status || 500).send(`Error: ${err.message}`);
+  }
+});
+
 // Incidents (same handlers the Vercel function uses)
 const wrap = fn => async (req, res) => {
   try { res.json(await fn(req, res)); }
@@ -51,8 +69,16 @@ app.post('/api/incidents',   async (req, res) => { try { res.status(201).json(aw
 app.patch('/api/incidents',  wrap(req => { const { id, ...p } = req.body || {}; return store.updateIncident(id, p); }));
 app.delete('/api/incidents', wrap(req => store.deleteIncident((req.body && req.body.id) || req.query.id)));
 
-app.get('/api/status', (req, res) => {
-  res.json({ ok: true, notionConfigured: !!process.env.NOTION_TOKEN, storageConfigured: store.storageConfigured() });
+app.get('/api/status', async (req, res) => {
+  let notionConnected = false;
+  try { notionConnected = await notionReady(); } catch (_) {}
+  res.json({
+    ok: true,
+    notionConfigured: !!process.env.NOTION_TOKEN,
+    notionConnected,
+    oauthConfigured: oauthConfigured(),
+    storageConfigured: store.storageConfigured(),
+  });
 });
 
 const PORT = process.env.PORT || 8080;

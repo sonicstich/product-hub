@@ -1478,7 +1478,12 @@ async function createTask(e){
     document.getElementById('task-success').style.display='block';
   }catch(err){
     document.getElementById('task-form').style.display='none';
-    document.getElementById('task-error-msg').textContent=err.message;
+    const box=document.getElementById('task-error-msg');
+    if(/notion-connect|not connected|reconnect/i.test(err.message)){
+      box.innerHTML='Notion is not connected yet. <a href="/api/notion-connect" style="color:#E07532;font-weight:600;text-decoration:none">Connect Notion →</a>';
+    }else{
+      box.textContent=err.message;
+    }
     document.getElementById('task-error').style.display='block';
   }finally{
     btn.disabled=false; btn.textContent='Add to Notion';
