@@ -636,8 +636,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
 
             <div class="field">
-              <label>What metric will this impact?</label>
-              <textarea class="inp" id="task-metric" rows="2" placeholder="e.g. Raise deposit conversion by 15%, reduce KYC drop-off, improve onboarding completion rate…"></textarea>
+              <label>What metric will this impact?<span class="req">*</span></label>
+              <textarea class="inp" id="task-metric" rows="2" placeholder="e.g. Raise deposit conversion by 15%, reduce KYC drop-off, improve onboarding completion rate…" required></textarea>
               <div class="metric-hints">
                 <span class="metric-hint" onclick="appendMetric('Raise conversion rate')">↑ Conversion rate</span>
                 <span class="metric-hint" onclick="appendMetric('Reduce drop-off')">↓ Drop-off</span>
@@ -648,12 +648,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
 
             <div class="field">
-              <label>Description — what needs to be done?</label>
-              <textarea class="inp" id="task-description" rows="6" placeholder="Describe what should be built or changed — scope, requirements, acceptance criteria, edge cases. This goes into the body of the Notion task."></textarea>
+              <label>Description — what needs to be done?<span class="req">*</span></label>
+              <textarea class="inp" id="task-description" rows="6" placeholder="Describe what should be built or changed — scope, requirements, acceptance criteria, edge cases. This goes into the body of the Notion task." required></textarea>
             </div>
 
             <div class="field">
-              <label>Priority</label>
+              <label>Priority<span class="req">*</span></label>
               <div class="prio-group">
                 <label class="prio-lbl"><input type="radio" name="priority" value="Low"><span class="p-low">Low</span></label>
                 <label class="prio-lbl"><input type="radio" name="priority" value="Medium" checked><span class="p-medium">Medium</span></label>
@@ -684,7 +684,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
 
             <div class="field">
-              <label>Affected areas</label>
+              <label>Affected areas<span class="req">*</span></label>
               <div class="area-chips">
                 <label class="area-lbl"><input type="checkbox" value="Authorization"><span>Authorization</span></label>
                 <label class="area-lbl"><input type="checkbox" value="KYC"><span>KYC</span></label>
@@ -696,6 +696,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <label class="area-lbl"><input type="checkbox" value="Trading"><span>Trading</span></label>
                 <label class="area-lbl"><input type="checkbox" value="Other" onchange="toggleOtherArea(this)"><span>Other</span></label>
               </div>
+              <div id="areas-error" style="display:none;color:#dc2626;font-size:12.5px;margin-top:8px">Please select at least one area.</div>
               <div class="other-area-field" id="other-area-field">
                 <input class="inp" type="text" id="other-area-text" placeholder="Specify the area…">
               </div>
@@ -1425,10 +1426,14 @@ loadIncidents(); // populate the sidebar badge on first load
     document.getElementById('critical-box').classList.toggle('show',isCrit);
     document.getElementById('task-critical').required=isCrit;
   }));
+  document.querySelectorAll('.area-chips input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{
+    if(document.querySelectorAll('.area-lbl input:checked').length) document.getElementById('areas-error').style.display='none';
+  }));
 })();
 
 function toggleOtherArea(cb){
   document.getElementById('other-area-field').classList.toggle('show',cb.checked);
+  document.getElementById('other-area-text').required=cb.checked;
   if(!cb.checked) document.getElementById('other-area-text').value='';
 }
 
@@ -1468,7 +1473,14 @@ async function createTask(e){
   const mockupLink=document.getElementById('mockup-link').value.trim();
   const mockupFileNames=_attachedFiles.map(f=>f.name);
   const description=document.getElementById('task-description').value.trim();
-  if(!title||!why||!dueDate) return;
+  // Areas are checkboxes (no native "at least one" rule) → validate here.
+  if(areas.length===0){
+    document.getElementById('areas-error').style.display='block';
+    document.querySelector('.area-chips').scrollIntoView({block:'center',behavior:'smooth'});
+    return;
+  }
+  document.getElementById('areas-error').style.display='none';
+  if(!title||!why||!metric||!description||!dueDate) return;
   const btn=document.getElementById('task-submit-btn');
   btn.disabled=true; btn.textContent='Creating…';
   try{
@@ -1504,6 +1516,8 @@ function resetTaskForm(){
   document.getElementById('critical-box').classList.remove('show');
   document.getElementById('task-critical').required=false;
   document.getElementById('other-area-field').classList.remove('show');
+  document.getElementById('other-area-text').required=false;
+  document.getElementById('areas-error').style.display='none';
   document.querySelector('[name=priority][value=Medium]').checked=true;
   _attachedFiles=[]; renderFileList();
   const now=new Date();now.setHours(0,0,0,0);
