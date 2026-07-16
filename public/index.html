@@ -286,6 +286,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-tasks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .inc-task-link{font-size:11.5px;font-weight:700;color:#E07532;text-decoration:none;padding:4px 10px;background:rgba(224,117,50,.08);border-radius:6px;border:1px solid rgba(224,117,50,.2);transition:background .15s}
 .inc-task-link:hover{background:rgba(224,117,50,.16)}
+.inc-slack-link{color:#5b3b6b;background:rgba(74,21,75,.07);border-color:rgba(74,21,75,.18)}
+.inc-slack-link:hover{background:rgba(74,21,75,.14)}
 .inc-task-edit-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .inc-task-edit-item{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#f9fafb;border-radius:7px;font-size:12.5px}
 .inc-task-edit-item span{font-weight:700;color:#6b7280;flex-shrink:0}
@@ -1351,13 +1353,19 @@ function renderIncidents(){
   if(_incFilter==='Active') items=items.filter(i=>i.status!=='Resolved');
   else if(_incFilter!=='All') items=items.filter(i=>i.status===_incFilter);
   if(!items.length){ list.innerHTML=`<div class="inc-empty"><div class="ico">🎉</div>No incidents${_incFilter==='Active'?' — all clear':''}</div>`; return; }
+  // Slack workspace origin, derived from any incident that has a stored permalink,
+  // so older incidents (with only ts+channel) can still get a thread link.
+  const slackOrigin=(()=>{const u=(_incidents.find(x=>x.slackUrl)||{}).slackUrl||'';const m=u.match(/^https?:\/\/[^/]+/);return m?m[0]:'';})();
   list.innerHTML=items.map(i=>{
     const opts=INC_STATUSES.map(s=>`<option value="${s}" ${s===i.status?'selected':''}>${s}</option>`).join('');
     const areas=(i.areas||[]).map(a=>`<span class="inc-tag">${escHtml(a)}</span>`).join('');
     const PLAT_ICON={iOS:'🍎',Android:'🤖'};
     const plats=(i.platforms||[]).map(p=>`<span class="inc-tag inc-plat">${PLAT_ICON[p]||''} ${escHtml(p)}</span>`).join('');
     const imgs=(i.images||[]).length?`<div class="inc-imgs">${i.images.map((src,ix)=>`<img src="${escHtml(src)}" onclick="openLightboxFrom('${i.id}',${ix})">`).join('')}</div>`:'';
-    const tasks=(i.tasks||[]).length?`<div class="inc-tasks">${i.tasks.map((url,ix)=>`<a href="${escHtml(url)}" target="_blank" class="inc-task-link">🔗 Task ${ix+1}</a>`).join('')}</div>`:'';
+    const taskLinks=(i.tasks||[]).map((url,ix)=>`<a href="${escHtml(url)}" target="_blank" class="inc-task-link">🔗 Task ${ix+1}</a>`).join('');
+    const slackUrl=i.slackUrl||(slackOrigin&&i.slackTs&&i.slackChannel?`${slackOrigin}/archives/${i.slackChannel}/p${String(i.slackTs).replace('.','')}`:'');
+    const slackLink=slackUrl?`<a href="${escHtml(slackUrl)}" target="_blank" class="inc-task-link inc-slack-link">💬 Slack thread</a>`:'';
+    const tasks=(taskLinks||slackLink)?`<div class="inc-tasks">${taskLinks}${slackLink}</div>`:'';
     return `<div class="inc-card ${i.status==='Resolved'?'resolved':''}">
       <div class="inc-top">
         <div style="flex:1;min-width:0">
