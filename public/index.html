@@ -142,6 +142,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ph p{font-size:14.5px;color:#6b7280;margin:0;line-height:1.55}
 .ph p a{color:#E07532;font-weight:600;text-decoration:none}
 .ph p a:hover{text-decoration:underline}
+/* ── RELEASE CYCLES ── */
+.rel-legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;font-size:12.5px;color:#6b7280}
+.rl-item{display:inline-flex;align-items:center;gap:7px}
+.rl-dot{width:11px;height:11px;border-radius:4px;border:1px solid;display:inline-block}
+.rel-list{display:flex;flex-direction:column;gap:16px;max-width:940px}
+.rel-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 20px}
+.rel-card.cur{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.08)}
+.rel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.rel-title{font-size:15px;font-weight:700;color:#141210;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rel-badge{font-size:10px;font-weight:700;color:#E07532;background:rgba(224,117,50,.1);border:1px solid rgba(224,117,50,.25);border-radius:20px;padding:2px 9px;text-transform:uppercase;letter-spacing:.4px}
+.rel-dates{font-size:13px;font-weight:500;color:#9ca3af}
+.rel-edit{border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600;color:#6b7280;cursor:pointer;transition:background .15s,color .15s;flex-shrink:0}
+.rel-edit:hover{background:#f9fafb;color:#374151}
+.rel-track{display:flex;align-items:center;gap:14px;padding:10px 0}
+.rel-track+.rel-track{border-top:1px dashed #f0eee9}
+.rel-plat{width:92px;flex-shrink:0;font-size:13px;font-weight:600;color:#374151}
+.rel-phases{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.rel-phase{flex:1;min-width:130px;border-radius:9px;padding:9px 12px;border:1px solid}
+.rel-phase .pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.9;margin-bottom:3px}
+.rel-phase .pd{font-size:13px;font-weight:700;color:#141210}
+.rel-phase .pdur{font-size:11px;color:#9ca3af;margin-top:2px}
+.pf-freeze{background:#fff1f2;border-color:#fecdd3}.pf-freeze .pl,.rl-dot.pf-freeze{color:#e11d48}
+.pf-dev{background:#eff6ff;border-color:#bfdbfe}.pf-dev .pl,.rl-dot.pf-dev{color:#2563eb}
+.pf-test{background:#fffbeb;border-color:#fde68a}.pf-test .pl,.rl-dot.pf-test{color:#d97706}
+.pf-pub{background:#f0fdf4;border-color:#bbf7d0}.pf-pub .pl,.rl-dot.pf-pub{color:#16a34a}
+.rl-dot.pf-freeze{background:#fff1f2}.rl-dot.pf-dev{background:#eff6ff}.rl-dot.pf-test{background:#fffbeb}.rl-dot.pf-pub{background:#f0fdf4}
+.rel-edit-plat{font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.rel-edit-fields{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.rel-edit-fields label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:#6b7280}
+.rel-edit-fields input[type=date]{border:1px solid #e5e7eb;border-radius:7px;padding:7px 9px;font-size:12.5px;font-family:inherit;color:#141210}
+.rel-copy{font-size:11.5px;color:#E07532;font-weight:600;cursor:pointer;background:none;border:none;padding:0}
+.rel-copy:hover{text-decoration:underline}
+.rel-edit-actions{display:flex;gap:10px;align-items:center}
+.rel-cancel{border:none;background:none;color:#9ca3af;font-size:13px;font-weight:600;cursor:pointer}
+.rel-cancel:hover{color:#6b7280}
 .field{margin-bottom:18px}
 .field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
 .req{color:#ef4444;margin-left:2px}
@@ -482,29 +517,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- CALENDAR -->
     <div id="page-calendar" class="page">
-      <div class="sprint-banner" id="banner"></div>
-
-      <div class="legend">
-        <span class="lg-title">Legend:</span>
-        <div class="lg-item"><div class="lg-chip" style="background:#dbeafe;outline:2px solid #60a5fa;outline-offset:-2px"></div>Reg. testing</div>
-        <div class="lg-item"><div class="lg-chip" style="background:#ffedd5;outline:2px solid #fb923c;outline-offset:-2px"></div>Submit for Review</div>
-        <div class="lg-item"><div class="lg-chip" style="background:#fef9c3;outline:2px solid #fbbf24;outline-offset:-2px"></div>Review in Progress</div>
-        <div class="lg-item"><div class="lg-chip" style="background:#dcfce7;outline:2px solid #4ade80;outline-offset:-2px"></div>Published to Stores</div>
-        <div class="lg-item"><div class="lg-chip" style="background:#fff1f2;outline:1px solid #fca5a5;outline-offset:-1px"></div>Public holiday</div>
-        <div class="lg-item"><div style="width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2);flex-shrink:0"></div>Today</div>
+      <div class="ph"><h2>Release Calendar</h2><p>Planned schedule per platform. Edit any cycle to reflect the actual dates — timing often differs between iOS and Android.</p></div>
+      <div class="rel-legend">
+        <span class="rl-item"><span class="rl-dot pf-freeze"></span>Feature freeze</span>
+        <span class="rl-item"><span class="rl-dot pf-dev"></span>Development</span>
+        <span class="rl-item"><span class="rl-dot pf-test"></span>Testing &amp; Review</span>
+        <span class="rl-item"><span class="rl-dot pf-pub"></span>Publish</span>
       </div>
-
-      <div class="cal-grid" id="cal-grid"></div>
-
-      <div class="sec-title">All Sprints — 2026</div>
-      <div class="sp-table-wrap">
-        <table class="sp-table">
-          <thead><tr>
-            <th>Sprint</th><th>Period</th><th>Testing (Wed)</th><th>Submit (Thu)</th><th>Review (Fri–Mon)</th><th>Publish (Tue)</th>
-          </tr></thead>
-          <tbody id="sprint-tbody"></tbody>
-        </table>
-      </div>
+      <div class="rel-list" id="rel-list"><div class="inc-empty">Loading…</div></div>
     </div>
 
     <!-- INCIDENT -->
@@ -951,9 +971,12 @@ function renderSprints(anchor){
   // Calendar window: current month + 6 ahead (past months drop off automatically)
   const winStart=new Date(today.getFullYear(), today.getMonth(), 1);
   const winEnd  =new Date(winStart.getFullYear(), winStart.getMonth()+7, 1);
-  let calHtml='';
-  for(let i=0;i<7;i++){const d=new Date(winStart.getFullYear(), winStart.getMonth()+i, 1); calHtml+=buildMonth(d.getFullYear(), d.getMonth());}
-  document.getElementById('cal-grid').innerHTML=calHtml;
+  const calEl=document.getElementById('cal-grid');
+  if(calEl){
+    let calHtml='';
+    for(let i=0;i<7;i++){const d=new Date(winStart.getFullYear(), winStart.getMonth()+i, 1); calHtml+=buildMonth(d.getFullYear(), d.getMonth());}
+    calEl.innerHTML=calHtml;
+  }
 
   // Sprint table — only sprints whose start falls inside the calendar window
   let tbody='';
@@ -969,7 +992,7 @@ function renderSprints(anchor){
       <td><span class="badge bp">${fmt(addDays(s,15))}</span></td>
     </tr>`;
   });
-  document.getElementById('sprint-tbody').innerHTML=tbody;
+  const tbEl=document.getElementById('sprint-tbody'); if(tbEl) tbEl.innerHTML=tbody;
 
   // Banner + home cards → current sprint (or next upcoming if we're between sprints)
   let cur=sprints.find(({s})=>today>=s&&today<=addDays(s,SPRINT_SPAN));
@@ -981,7 +1004,8 @@ function renderSprints(anchor){
   const sm={testing:'Reg. testing',submit:'Submit for Review',review:'Review in Progress',publish:'Publishing to Stores'};
   const todayLabel=info?'📍 '+sm[info.type]:'Regular sprint work';
 
-  document.getElementById('banner').innerHTML=`
+  const bnEl=document.getElementById('banner');
+  if(bnEl) bnEl.innerHTML=`
     <div class="sb-item"><div class="lbl">Current Sprint</div><div class="val">Sprint ${cur.num} · ${fmt(cur.s)} — ${fmt(cur.end)}</div></div>
     <div class="sb-sep"></div>
     <div class="sb-item"><div class="lbl">Reg. testing · Submit</div><div class="val">${fmt(addDays(cur.s,9))} · ${fmt(addDays(cur.s,10))}</div></div>
@@ -1020,6 +1044,109 @@ function renderSprints(anchor){
 // Derived entirely from the anchor + today — auto-advances every sprint, no editing.
 renderSprints(currentAnchor());
 
+// ── RELEASE CYCLES (editable, per-platform, saved to Supabase) ──────────
+const RELEASE_END = parseDate('2026-12-31');
+let _releaseOverrides = {}; // cycleKey → {ios, android}
+let _releasesLoaded = false;
+let _relEditKey = null;
+const REL_LABELS = [['freeze','Feature freeze'],['devStart','Dev start'],['devEnd','Dev end'],['trStart','Test & Review start'],['trEnd','Test & Review end'],['publish','Publish']];
+
+// The list of cycles from the current one through end-2026 (fixed cadence).
+function releaseCycles(){
+  const a=currentAnchor(); const out=[]; let n=a.num, s=new Date(a.start);
+  while(s<=RELEASE_END){ out.push({key:toKey(s), num:n, start:new Date(s)}); n++; s=addDays(s,SPRINT_DAYS); }
+  return out;
+}
+// Seed defaults from the cadence (iOS/Android identical until edited).
+function releaseDefaults(start){
+  const d=o=>toKey(addDays(start,o));
+  const base={freeze:d(0),devStart:d(0),devEnd:d(8),trStart:d(9),trEnd:d(14),publish:d(15)};
+  return {ios:{...base},android:{...base}};
+}
+function relSchedule(c){
+  const def=releaseDefaults(c.start); const ov=_releaseOverrides[c.key]||{};
+  return {ios:{...def.ios,...(ov.ios||{})}, android:{...def.android,...(ov.android||{})}};
+}
+function fmtK(k){ if(!k) return '—'; const d=parseDate(k); return `${d.getDate()} ${MS[d.getMonth()]}`; }
+function fmtRange(a,b){ if(!a&&!b) return '—'; if(!b||a===b) return fmtK(a); return `${fmtK(a)} → ${fmtK(b)}`; }
+function relDays(a,b){ if(!a||!b) return null; const n=Math.round((parseDate(b)-parseDate(a))/864e5)+1; return n>0?n:null; }
+
+function relPhase(cls,label,dateHtml,dur){
+  return `<div class="rel-phase ${cls}"><div class="pl">${label}</div><div class="pd">${dateHtml}</div>${dur?`<div class="pdur">${dur}</div>`:''}</div>`;
+}
+function relTrack(icon,name,s){
+  const dv=relDays(s.devStart,s.devEnd), tr=relDays(s.trStart,s.trEnd);
+  return `<div class="rel-track">
+    <div class="rel-plat">${icon} ${name}</div>
+    <div class="rel-phases">
+      ${relPhase('pf-freeze','Feature freeze',fmtK(s.freeze),'')}
+      ${relPhase('pf-dev','Development',fmtRange(s.devStart,s.devEnd),dv?dv+' days':'')}
+      ${relPhase('pf-test','Testing & Review',fmtRange(s.trStart,s.trEnd),tr?tr+' days':'')}
+      ${relPhase('pf-pub','Publish',fmtK(s.publish),'')}
+    </div>
+  </div>`;
+}
+function relEditCard(c,s,isCur){
+  const flds=(p,obj)=>REL_LABELS.map(([f,l])=>`<label>${l}<input type="date" data-p="${p}" data-f="${f}" value="${obj[f]||''}"></label>`).join('');
+  return `<div class="rel-card ${isCur?'cur':''}" id="rel-edit-${c.key}">
+    <div class="rel-head"><div class="rel-title">Sprint ${c.num}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div></div>
+    <div class="rel-edit-plat">🍎 iOS <button class="rel-copy" onclick="copyRel('android','ios')">← copy from Android</button></div>
+    <div class="rel-edit-fields">${flds('ios',s.ios)}</div>
+    <div class="rel-edit-plat">🤖 Android <button class="rel-copy" onclick="copyRel('ios','android')">← copy from iOS</button></div>
+    <div class="rel-edit-fields">${flds('android',s.android)}</div>
+    <div class="rel-edit-actions">
+      <button class="btn-sub" style="width:auto;padding:9px 22px" onclick="saveReleaseEdit('${c.key}',${c.num})">Save</button>
+      <button class="rel-cancel" onclick="_relEditKey=null;renderReleases()">Cancel</button>
+    </div>
+  </div>`;
+}
+function renderReleases(){
+  const list=document.getElementById('rel-list'); if(!list) return;
+  list.innerHTML=releaseCycles().map(c=>{
+    const isCur=today>=c.start&&today<=addDays(c.start,SPRINT_SPAN);
+    const s=relSchedule(c);
+    if(_relEditKey===c.key) return relEditCard(c,s,isCur);
+    return `<div class="rel-card ${isCur?'cur':''}">
+      <div class="rel-head">
+        <div class="rel-title">Sprint ${c.num}${isCur?'<span class="rel-badge">Current</span>':''}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div>
+        <button class="rel-edit" onclick="editRelease('${c.key}')">✎ Edit</button>
+      </div>
+      ${relTrack('🍎','iOS',s.ios)}
+      ${relTrack('🤖','Android',s.android)}
+    </div>`;
+  }).join('');
+}
+async function loadReleases(force){
+  if(!_releasesLoaded||force){
+    try{
+      const r=await fetch('/api/releases'); const d=await r.json();
+      _releaseOverrides={};
+      (d.releases||[]).forEach(x=>{ _releaseOverrides[x.cycleKey]={ios:x.ios||{},android:x.android||{}}; });
+      _releasesLoaded=true;
+    }catch(e){ /* fall back to cadence defaults */ }
+  }
+  renderReleases();
+}
+function editRelease(key){ _relEditKey=key; renderReleases(); const el=document.getElementById('rel-edit-'+key); if(el) el.scrollIntoView({block:'center',behavior:'smooth'}); }
+function copyRel(from,to){
+  const card=document.getElementById('rel-edit-'+_relEditKey); if(!card) return;
+  card.querySelectorAll(`input[data-p="${from}"]`).forEach(src=>{
+    const dst=card.querySelector(`input[data-p="${to}"][data-f="${src.getAttribute('data-f')}"]`); if(dst) dst.value=src.value;
+  });
+}
+async function saveReleaseEdit(key,num){
+  const card=document.getElementById('rel-edit-'+key); if(!card) return;
+  const gather=p=>{const o={};card.querySelectorAll(`input[data-p="${p}"]`).forEach(i=>{if(i.value)o[i.getAttribute('data-f')]=i.value;});return o;};
+  const body={cycleKey:key,num,ios:gather('ios'),android:gather('android')};
+  const btn=card.querySelector('.btn-sub'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const r=await fetch('/api/releases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'Save failed');}
+    _releaseOverrides[key]={ios:body.ios,android:body.android};
+    _relEditKey=null; renderReleases();
+  }catch(e){ alert('Could not save: '+e.message); btn.disabled=false; btn.textContent='Save'; }
+}
+
 // ── SIDEBAR ─────────────────────────────────────────────────────────
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
@@ -1043,6 +1170,7 @@ function go(id,el){
   document.getElementById('bc').textContent=TITLES[id]||id;
   if(location.hash!=='#'+id) location.hash=id;
   if(id==='incidents') loadIncidents();
+  if(id==='calendar') loadReleases();
 }
 // Keep the current page in the URL hash so a refresh (or back/forward, or a
 // bookmarked link) restores it instead of always dropping back to Home.

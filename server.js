@@ -70,6 +70,9 @@ const wrap = fn => async (req, res) => {
   try { res.json(await fn(req, res)); }
   catch (err) { res.status(err instanceof HttpError || err.status ? err.status : 500).json({ error: err.message }); }
 };
+app.get('/api/releases',  wrap(() => store.listReleases()));
+app.post('/api/releases', async (req, res) => { try { res.json(await store.saveRelease(req.body || {})); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
+
 app.get('/api/incidents',    wrap(req => store.listIncidents()));
 app.post('/api/incidents',   async (req, res) => { try { res.status(201).json(await store.createIncident(req.body || {})); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 app.patch('/api/incidents',  wrap(req => { const { id, ...p } = req.body || {}; return store.updateIncident(id, p); }));
