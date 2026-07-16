@@ -354,14 +354,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
         <span class="nav-label">Create Task</span>
       </div>
+      <div class="nav-item" id="nav-incident" onclick="go('incident',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <span class="nav-label">Report Incident</span>
+      </div>
+      <div class="nav-item" id="nav-feedback" onclick="go('feedback',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <span class="nav-label">Share user feedback</span>
+      </div>
       <div class="nav-item" id="nav-incidents" onclick="go('incidents',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
         <span class="nav-label">Open Incidents</span>
         <span class="nav-badge" id="inc-nav-count"></span>
-      </div>
-      <div class="nav-item" id="nav-incident" onclick="go('incident',this)">
-        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <span class="nav-label">Report Incident</span>
       </div>
     </div>
     <div class="nav-section">
@@ -764,6 +768,74 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
 
+    <!-- SHARE USER FEEDBACK -->
+    <div id="page-feedback" class="page">
+      <div class="ph"><h2>Share user feedback</h2><p>Log feedback from users in one place — saved to the <strong>Notion feedback board</strong>.</p></div>
+      <div class="two-col">
+        <div class="card">
+          <form id="feedback-form" onsubmit="createFeedback(event)">
+
+            <div class="field">
+              <label>Title<span class="req">*</span></label>
+              <input class="inp" id="fb-title" type="text" placeholder="Short summary of the feedback" required>
+            </div>
+
+            <div class="field">
+              <label>Description<span class="req">*</span></label>
+              <textarea class="inp" id="fb-description" rows="5" placeholder="What did the user say? The request, the context, and why it matters." required></textarea>
+            </div>
+
+            <div class="field">
+              <label>How many users gave this feedback?</label>
+              <input class="inp" id="fb-users" type="number" min="1" step="1" placeholder="e.g. 5">
+            </div>
+
+            <div class="field">
+              <label>Importance<span class="req">*</span></label>
+              <div class="prio-group">
+                <label class="prio-lbl"><input type="radio" name="fb-importance" value="Low"><span class="p-low">Low</span></label>
+                <label class="prio-lbl"><input type="radio" name="fb-importance" value="Medium" checked><span class="p-medium">Medium</span></label>
+                <label class="prio-lbl"><input type="radio" name="fb-importance" value="High"><span class="p-high">High</span></label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>User ID</label>
+              <input class="inp" id="fb-userid" type="text" placeholder="ID of the user who shared this feedback">
+            </div>
+
+            <button type="submit" class="btn-sub" id="feedback-submit-btn" style="margin-top:8px">Add feedback</button>
+          </form>
+
+          <div class="success" id="feedback-success" style="display:none">
+            <div class="ico">✅</div>
+            <h3>Feedback saved!</h3>
+            <p>Added to the Notion feedback board.</p>
+            <a id="feedback-notion-link" href="#" target="_blank" class="btn-sub" style="display:inline-block;text-decoration:none;margin-bottom:8px;margin-top:14px">Open in Notion →</a><br>
+            <button class="btn-again" onclick="resetFeedbackForm()">Add more feedback</button>
+          </div>
+          <div class="success" id="feedback-error" style="display:none;background:#fef2f2;border-color:#fca5a5">
+            <div class="ico">⚠️</div>
+            <h3 style="color:#b91c1c">Error</h3>
+            <p id="feedback-error-msg" style="color:#991b1b"></p>
+            <button class="btn-again" onclick="document.getElementById('feedback-error').style.display='none';document.getElementById('feedback-form').style.display='block'" style="border-color:#b91c1c;color:#b91c1c">Try again</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Importance</h3>
+          <div class="flow-steps">
+            <div class="flow-step"><div class="flow-dot" style="background:#f3f4f6">⚪️</div><div><div class="fl-title">Low</div><div class="fl-sub">Nice-to-have, minor annoyance</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:#fef9c3">🟡</div><div><div class="fl-title">Medium</div><div class="fl-sub">Affects experience, worth planning</div></div></div>
+            <div class="flow-step"><div class="flow-dot" style="background:#fef2f2">🟠</div><div><div class="fl-title">High</div><div class="fl-sub">Blocks or frustrates many users</div></div></div>
+          </div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:12.5px;color:#6b7280;line-height:1.5">
+            Feedback is collected in the Notion feedback board so the whole team can spot recurring themes and prioritise.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -944,8 +1016,8 @@ renderSprints(currentAnchor());
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task'};
-const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback'};
+const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback'};
 function go(id,el){
   // Editing an incident relocates the shared form into Open Incidents. If the
   // user jumps straight to "Report Incident" instead of using Cancel/Save,
@@ -1524,6 +1596,50 @@ function resetTaskForm(){
   const minD=new Date(now);minD.setDate(now.getDate()+21);
   const minStr=toKey(minD);
   dpReset('due',minStr,minStr);
+}
+
+// ── SHARE USER FEEDBACK ─────────────────────────────────────────────────
+async function createFeedback(e){
+  e.preventDefault();
+  const title=document.getElementById('fb-title').value.trim();
+  const description=document.getElementById('fb-description').value.trim();
+  const users=document.getElementById('fb-users').value;
+  const importance=document.querySelector('[name=fb-importance]:checked')?.value||'Medium';
+  const userId=document.getElementById('fb-userid').value.trim();
+  if(!title||!description) return;
+  const btn=document.getElementById('feedback-submit-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const r=await fetch('/api/create-feedback',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,description,users,importance,userId})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Unknown error');
+    document.getElementById('feedback-form').style.display='none';
+    if(d.url) document.getElementById('feedback-notion-link').href=d.url;
+    document.getElementById('feedback-success').style.display='block';
+  }catch(err){
+    document.getElementById('feedback-form').style.display='none';
+    const box=document.getElementById('feedback-error-msg');
+    if(/notion-connect|not connected|reconnect/i.test(err.message)){
+      box.innerHTML='Notion is not connected yet. <a href="/api/notion-connect" style="color:#E07532;font-weight:600;text-decoration:none">Connect Notion →</a>';
+    }else{
+      box.textContent=err.message;
+    }
+    document.getElementById('feedback-error').style.display='block';
+  }finally{
+    btn.disabled=false; btn.textContent='Add feedback';
+  }
+}
+
+function resetFeedbackForm(){
+  document.getElementById('feedback-form').reset();
+  document.getElementById('feedback-form').style.display='block';
+  document.getElementById('feedback-success').style.display='none';
+  document.getElementById('feedback-error').style.display='none';
+  document.querySelector('[name=fb-importance][value=Medium]').checked=true;
 }
 
 // ── DOCUMENTATION ─────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
-const { createTask, listTasks, getCurrentSprint, authorizeUrl, exchangeCode, oauthConfigured, notionReady, HttpError } = require('./lib/notion');
+const { createTask, listTasks, getCurrentSprint, createFeedback, authorizeUrl, exchangeCode, oauthConfigured, notionReady, HttpError } = require('./lib/notion');
 const store = require('./lib/store');
 const { slackConfigured } = require('./lib/slack');
 
@@ -34,6 +34,11 @@ app.post('/api/create-task', async (req, res) => {
 
 app.get('/api/tasks', async (req, res) => {
   try { res.json(await listTasks()); }
+  catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
+});
+
+app.post('/api/create-feedback', async (req, res) => {
+  try { res.json(await createFeedback(req.body)); }
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
 });
 
