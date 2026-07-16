@@ -177,6 +177,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rel-edit-actions{display:flex;gap:10px;align-items:center}
 .rel-cancel{border:none;background:none;color:#9ca3af;font-size:13px;font-weight:600;cursor:pointer}
 .rel-cancel:hover{color:#6b7280}
+/* ── AI DOC SEARCH ── */
+.nav-ai{background:rgba(224,117,50,.16)}
+.nav-ai .nav-label{color:#fff;font-weight:600}
+.nav-ai .nav-icon{color:#E07532}
+.nav-ai:hover{background:rgba(224,117,50,.26)}
+.ds-steps{display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
+.ds-step{display:flex;gap:14px}
+.ds-num{width:26px;height:26px;border-radius:50%;background:#E07532;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ds-t{font-size:14px;font-weight:700;color:#141210;margin-bottom:2px}
+.ds-d{font-size:13.5px;color:#6b7280;line-height:1.55}
+.ds-d a{color:#E07532;font-weight:600;text-decoration:none}
+.ds-d a:hover{text-decoration:underline}
+.ds-prompt-label{font-size:12.5px;font-weight:600;color:#374151;margin-bottom:8px}
+.ds-prompt{position:relative;background:#faf9f7;border:1px solid #ece8e1;border-radius:10px;padding:14px 16px;margin-bottom:22px}
+.ds-prompt pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:#374151;white-space:pre-wrap;margin:0;line-height:1.5}
+.ds-copy{position:absolute;top:10px;right:10px;border:1px solid #e5e7eb;background:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;transition:background .15s,color .15s}
+.ds-copy:hover{background:#f3ede4;color:#E07532}
+.ds-tips-t{font-size:13px;font-weight:700;color:#141210;margin-bottom:8px}
+.ds-tips ul{margin:0;padding-left:18px}
+.ds-tips li{font-size:13px;color:#6b7280;line-height:1.65}
 .field{margin-bottom:18px}
 .field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
 .req{color:#ef4444;margin-left:2px}
@@ -426,6 +446,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="nav-section">
       <div class="nav-section-label">Documentation</div>
+      <div class="nav-item nav-ai" id="nav-docsearch" onclick="go('docsearch',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L20 10l-6.1 1.4L12 17l-1.9-5.6L4 10l6.1-1.4z"/></svg></div>
+        <span class="nav-label">AI Search</span>
+      </div>
       <div class="doc-tree" id="doc-tree"></div>
     </div>
   </nav>
@@ -864,6 +888,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
 
+    <!-- AI DOCUMENTATION SEARCH -->
+    <div id="page-docsearch" class="page">
+      <div class="ph"><h2>AI documentation search</h2><p>Stop digging through Notion. Ask your own Claude in plain language — it searches our documentation and answers with links to the source pages.</p></div>
+      <div class="card" style="max-width:780px">
+        <div class="ds-steps">
+          <div class="ds-step"><div class="ds-num">1</div><div><div class="ds-t">Open your corporate Claude</div><div class="ds-d">Go to <a href="https://claude.ai" target="_blank">claude.ai</a> and sign in with your work account.</div></div></div>
+          <div class="ds-step"><div class="ds-num">2</div><div><div class="ds-t">Connect Notion (one time)</div><div class="ds-d">In Claude open <b>Settings → Connectors</b>, find <b>Notion</b>, click <b>Connect</b>, and authorize access to the workspace. You only do this once.</div></div></div>
+          <div class="ds-step"><div class="ds-num">3</div><div><div class="ds-t">Ask your question</div><div class="ds-d">Start a new chat, make sure the <b>Notion</b> tool is enabled (tools menu), then ask. Claude searches the docs and answers with the source pages linked.</div></div></div>
+        </div>
+
+        <div class="ds-prompt-label">Suggested prompt — copy, paste into Claude, then add your question:</div>
+        <div class="ds-prompt">
+          <pre id="ds-prompt-text">Search our Notion documentation to answer my question. Quote the exact part you used and link the source page(s). If you can't find it in the docs, say so instead of guessing.
+
+My question: </pre>
+          <button class="ds-copy" onclick="copyDsPrompt(this)">Copy</button>
+        </div>
+
+        <div class="ds-tips">
+          <div class="ds-tips-t">Tips for better answers</div>
+          <ul>
+            <li>Be specific — name the area (KYC, Deposits, Withdrawals, Trading…) and the exact feature.</li>
+            <li>Always ask for the source link so you can open the full page.</li>
+            <li>If the answer looks off, reply “search again and check other pages.”</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1151,8 +1204,8 @@ async function saveReleaseEdit(key,num){
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback'};
-const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI Search'};
+const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',docsearch:'nav-docsearch'};
 function go(id,el){
   // Editing an incident relocates the shared form into Open Incidents. If the
   // user jumps straight to "Report Incident" instead of using Cancel/Save,
@@ -1738,6 +1791,13 @@ function resetTaskForm(){
   const minD=new Date(now);minD.setDate(now.getDate()+21);
   const minStr=toKey(minD);
   dpReset('due',minStr,minStr);
+}
+
+// ── AI DOC SEARCH ───────────────────────────────────────────────────────
+function copyDsPrompt(btn){
+  const t=document.getElementById('ds-prompt-text').textContent;
+  navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=o;},1500);})
+    .catch(()=>{const o=btn.textContent;btn.textContent='Copy failed';setTimeout(()=>{btn.textContent=o;},1500);});
 }
 
 // ── SHARE USER FEEDBACK ─────────────────────────────────────────────────
