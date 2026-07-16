@@ -177,6 +177,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rel-edit-actions{display:flex;gap:10px;align-items:center}
 .rel-cancel{border:none;background:none;color:#9ca3af;font-size:13px;font-weight:600;cursor:pointer}
 .rel-cancel:hover{color:#6b7280}
+.rel-release+.rel-release{border-top:1px solid #ece8e1;margin-top:8px;padding-top:8px}
+.rel-rhead{display:flex;align-items:center;gap:10px;padding:4px 0 6px}
+.rel-rlabel{font-size:12.5px;font-weight:700;color:#374151}
+.rel-hard{font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:2px 9px;text-transform:uppercase;letter-spacing:.4px}
+.rel-none{font-size:13px;color:#9ca3af;font-style:italic;padding:8px 0}
+.rel-add{margin-top:12px;border:1px dashed #d1d5db;background:#fff;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:600;color:#6b7280;cursor:pointer;width:100%;transition:border-color .15s,color .15s}
+.rel-add:hover{border-color:#E07532;color:#E07532}
+.rel-edit-release{border:1px solid #eee;border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fcfbf9}
+.rel-edit-rtop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.rel-label-input{flex:1;min-width:120px;border:1px solid #e5e7eb;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;color:#141210}
+.rel-hard-toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#b45309;white-space:nowrap;cursor:pointer;user-select:none}
+.rel-remove{border:none;background:none;color:#c4c9d0;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0}
+.rel-remove:hover{color:#ef4444}
 /* ── AI DOC SEARCH ── */
 .nav-ai{background:rgba(224,117,50,.16)}
 .nav-ai .nav-label{color:#fff;font-weight:600}
@@ -1097,28 +1110,31 @@ function renderSprints(anchor){
 // Derived entirely from the anchor + today — auto-advances every sprint, no editing.
 renderSprints(currentAnchor());
 
-// ── RELEASE CYCLES (editable, per-platform, saved to Supabase) ──────────
+// ── RELEASE CYCLES (multi-release per sprint, editable, saved to Supabase) ──
 const RELEASE_END = parseDate('2026-12-31');
-let _releaseOverrides = {}; // cycleKey → {ios, android}
+let _releaseOverrides = {}; // cycleKey → { items: [release, …] }
 let _releasesLoaded = false;
 let _relEditKey = null;
+let _relEditItems = [];      // working copy of a cycle's releases while editing
 const REL_LABELS = [['freeze','Feature freeze'],['devStart','Dev start'],['devEnd','Dev end'],['trStart','Test & Review start'],['trEnd','Test & Review end'],['publish','Publish']];
 
-// The list of cycles from the current one through end-2026 (fixed cadence).
+// Cycles from the current one through end-2026 (fixed cadence).
 function releaseCycles(){
   const a=currentAnchor(); const out=[]; let n=a.num, s=new Date(a.start);
   while(s<=RELEASE_END){ out.push({key:toKey(s), num:n, start:new Date(s)}); n++; s=addDays(s,SPRINT_DAYS); }
   return out;
 }
-// Seed defaults from the cadence (iOS/Android identical until edited).
-function releaseDefaults(start){
+// One default release seeded from the cadence (iOS/Android identical).
+function defaultRelease(start){
   const d=o=>toKey(addDays(start,o));
   const base={freeze:d(0),devStart:d(0),devEnd:d(8),trStart:d(9),trEnd:d(14),publish:d(15)};
-  return {ios:{...base},android:{...base}};
+  return {label:'',hardUpdate:false,ios:{...base},android:{...base}};
 }
-function relSchedule(c){
-  const def=releaseDefaults(c.start); const ov=_releaseOverrides[c.key]||{};
-  return {ios:{...def.ios,...(ov.ios||{})}, android:{...def.android,...(ov.android||{})}};
+// A cycle's releases: the saved list (may be [] = skipped) or a single default.
+function cycleReleases(c){
+  const ov=_releaseOverrides[c.key];
+  if(ov && Array.isArray(ov.items)) return ov.items.map(r=>({label:r.label||'',hardUpdate:!!r.hardUpdate,ios:{...(r.ios||{})},android:{...(r.android||{})}}));
+  return [defaultRelease(c.start)];
 }
 function fmtK(k){ if(!k) return '—'; const d=parseDate(k); return `${d.getDate()} ${MS[d.getMonth()]}`; }
 function fmtRange(a,b){ if(!a&&!b) return '—'; if(!b||a===b) return fmtK(a); return `${fmtK(a)} → ${fmtK(b)}`; }
@@ -1128,7 +1144,7 @@ function relPhase(cls,label,dateHtml,dur){
   return `<div class="rel-phase ${cls}"><div class="pl">${label}</div><div class="pd">${dateHtml}</div>${dur?`<div class="pdur">${dur}</div>`:''}</div>`;
 }
 function relTrack(icon,name,s){
-  const dv=relDays(s.devStart,s.devEnd), tr=relDays(s.trStart,s.trEnd);
+  s=s||{}; const dv=relDays(s.devStart,s.devEnd), tr=relDays(s.trStart,s.trEnd);
   return `<div class="rel-track">
     <div class="rel-plat">${icon} ${name}</div>
     <div class="rel-phases">
@@ -1139,65 +1155,103 @@ function relTrack(icon,name,s){
     </div>
   </div>`;
 }
-function relEditCard(c,s,isCur){
-  const flds=(p,obj)=>REL_LABELS.map(([f,l])=>`<label>${l}<input type="date" data-p="${p}" data-f="${f}" value="${obj[f]||''}"></label>`).join('');
+function releaseView(rel,idx,total){
+  const name=rel.label||(total>1?`Release ${idx+1}`:'');
+  const badge=rel.hardUpdate?'<span class="rel-hard">⚡ Hard update</span>':'';
+  const head=(name||badge)?`<div class="rel-rhead">${name?`<span class="rel-rlabel">${escHtml(name)}</span>`:''}${badge}</div>`:'';
+  return `<div class="rel-release">${head}${relTrack('🍎','iOS',rel.ios)}${relTrack('🤖','Android',rel.android)}</div>`;
+}
+function renderReleases(){
+  const list=document.getElementById('rel-list'); if(!list) return;
+  list.innerHTML=releaseCycles().map(c=>{
+    const isCur=today>=c.start&&today<=addDays(c.start,SPRINT_SPAN);
+    if(_relEditKey===c.key) return relEditCard(c,isCur);
+    const rels=cycleReleases(c);
+    const body=rels.length ? rels.map((r,i)=>releaseView(r,i,rels.length)).join('') : '<div class="rel-none">No release this sprint</div>';
+    return `<div class="rel-card ${isCur?'cur':''}">
+      <div class="rel-head">
+        <div class="rel-title">Sprint ${c.num}${isCur?'<span class="rel-badge">Current</span>':''}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div>
+        <button class="rel-edit" onclick="editRelease('${c.key}')">✎ Edit</button>
+      </div>
+      ${body}
+    </div>`;
+  }).join('');
+}
+function relEditBlock(rel,idx){
+  const flds=(p,obj)=>REL_LABELS.map(([f,l])=>`<label>${l}<input type="date" data-idx="${idx}" data-p="${p}" data-f="${f}" value="${(obj&&obj[f])||''}"></label>`).join('');
+  return `<div class="rel-edit-release" data-idx="${idx}">
+    <div class="rel-edit-rtop">
+      <input class="rel-label-input" data-idx="${idx}" data-role="label" placeholder="Release name (optional, e.g. Hotfix)" value="${escHtml(rel.label||'')}">
+      <label class="rel-hard-toggle"><input type="checkbox" data-idx="${idx}" data-role="hard" ${rel.hardUpdate?'checked':''}> ⚡ Hard update</label>
+      <button class="rel-remove" onclick="relRemove(${idx})" title="Remove this release">✕</button>
+    </div>
+    <div class="rel-edit-plat">🍎 iOS <button class="rel-copy" onclick="copyRel(${idx},'android','ios')">← copy from Android</button></div>
+    <div class="rel-edit-fields">${flds('ios',rel.ios)}</div>
+    <div class="rel-edit-plat">🤖 Android <button class="rel-copy" onclick="copyRel(${idx},'ios','android')">← copy from iOS</button></div>
+    <div class="rel-edit-fields">${flds('android',rel.android)}</div>
+  </div>`;
+}
+function relEditCard(c,isCur){
+  const blocks=_relEditItems.map((r,i)=>relEditBlock(r,i)).join('');
   return `<div class="rel-card ${isCur?'cur':''}" id="rel-edit-${c.key}">
     <div class="rel-head"><div class="rel-title">Sprint ${c.num}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div></div>
-    <div class="rel-edit-plat">🍎 iOS <button class="rel-copy" onclick="copyRel('android','ios')">← copy from Android</button></div>
-    <div class="rel-edit-fields">${flds('ios',s.ios)}</div>
-    <div class="rel-edit-plat">🤖 Android <button class="rel-copy" onclick="copyRel('ios','android')">← copy from iOS</button></div>
-    <div class="rel-edit-fields">${flds('android',s.android)}</div>
+    ${_relEditItems.length?blocks:'<div class="rel-none">No releases in this sprint. Add one below, or Save to keep it empty (skipped).</div>'}
+    <button class="rel-add" onclick="relAdd()">+ Add release</button>
     <div class="rel-edit-actions">
       <button class="btn-sub" style="width:auto;padding:9px 22px" onclick="saveReleaseEdit('${c.key}',${c.num})">Save</button>
       <button class="rel-cancel" onclick="_relEditKey=null;renderReleases()">Cancel</button>
     </div>
   </div>`;
 }
-function renderReleases(){
-  const list=document.getElementById('rel-list'); if(!list) return;
-  list.innerHTML=releaseCycles().map(c=>{
-    const isCur=today>=c.start&&today<=addDays(c.start,SPRINT_SPAN);
-    const s=relSchedule(c);
-    if(_relEditKey===c.key) return relEditCard(c,s,isCur);
-    return `<div class="rel-card ${isCur?'cur':''}">
-      <div class="rel-head">
-        <div class="rel-title">Sprint ${c.num}${isCur?'<span class="rel-badge">Current</span>':''}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div>
-        <button class="rel-edit" onclick="editRelease('${c.key}')">✎ Edit</button>
-      </div>
-      ${relTrack('🍎','iOS',s.ios)}
-      ${relTrack('🤖','Android',s.android)}
-    </div>`;
-  }).join('');
+function relSyncFromDom(){
+  const card=document.getElementById('rel-edit-'+_relEditKey); if(!card) return;
+  card.querySelectorAll('.rel-edit-release').forEach(block=>{
+    const idx=+block.getAttribute('data-idx'); const rel=_relEditItems[idx]; if(!rel) return;
+    rel.label=block.querySelector('[data-role="label"]').value.trim();
+    rel.hardUpdate=block.querySelector('[data-role="hard"]').checked;
+    ['ios','android'].forEach(p=>{ rel[p]={}; block.querySelectorAll(`input[data-p="${p}"]`).forEach(i=>{ if(i.value) rel[p][i.getAttribute('data-f')]=i.value; }); });
+  });
+}
+function editRelease(key){
+  _relEditKey=key;
+  const c=releaseCycles().find(x=>x.key===key);
+  _relEditItems=cycleReleases(c);
+  renderReleases();
+  const el=document.getElementById('rel-edit-'+key); if(el) el.scrollIntoView({block:'center',behavior:'smooth'});
+}
+function relAdd(){
+  relSyncFromDom();
+  const c=releaseCycles().find(x=>x.key===_relEditKey);
+  _relEditItems.push(defaultRelease(c.start));
+  renderReleases();
+}
+function relRemove(idx){ relSyncFromDom(); _relEditItems.splice(idx,1); renderReleases(); }
+function copyRel(idx,from,to){
+  const card=document.getElementById('rel-edit-'+_relEditKey); if(!card) return;
+  const block=card.querySelector(`.rel-edit-release[data-idx="${idx}"]`); if(!block) return;
+  block.querySelectorAll(`input[data-p="${from}"]`).forEach(src=>{ const dst=block.querySelector(`input[data-p="${to}"][data-f="${src.getAttribute('data-f')}"]`); if(dst) dst.value=src.value; });
 }
 async function loadReleases(force){
   if(!_releasesLoaded||force){
     try{
       const r=await fetch('/api/releases'); const d=await r.json();
       _releaseOverrides={};
-      (d.releases||[]).forEach(x=>{ _releaseOverrides[x.cycleKey]={ios:x.ios||{},android:x.android||{}}; });
+      (d.releases||[]).forEach(x=>{ _releaseOverrides[x.cycleKey]={items:Array.isArray(x.items)?x.items:[]}; });
       _releasesLoaded=true;
     }catch(e){ /* fall back to cadence defaults */ }
   }
   renderReleases();
 }
-function editRelease(key){ _relEditKey=key; renderReleases(); const el=document.getElementById('rel-edit-'+key); if(el) el.scrollIntoView({block:'center',behavior:'smooth'}); }
-function copyRel(from,to){
-  const card=document.getElementById('rel-edit-'+_relEditKey); if(!card) return;
-  card.querySelectorAll(`input[data-p="${from}"]`).forEach(src=>{
-    const dst=card.querySelector(`input[data-p="${to}"][data-f="${src.getAttribute('data-f')}"]`); if(dst) dst.value=src.value;
-  });
-}
 async function saveReleaseEdit(key,num){
-  const card=document.getElementById('rel-edit-'+key); if(!card) return;
-  const gather=p=>{const o={};card.querySelectorAll(`input[data-p="${p}"]`).forEach(i=>{if(i.value)o[i.getAttribute('data-f')]=i.value;});return o;};
-  const body={cycleKey:key,num,ios:gather('ios'),android:gather('android')};
-  const btn=card.querySelector('.btn-sub'); btn.disabled=true; btn.textContent='Saving…';
+  relSyncFromDom();
+  const body={cycleKey:key,num,items:_relEditItems};
+  const btn=document.getElementById('rel-edit-'+key)?.querySelector('.btn-sub'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
   try{
     const r=await fetch('/api/releases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'Save failed');}
-    _releaseOverrides[key]={ios:body.ios,android:body.android};
+    _releaseOverrides[key]={items:_relEditItems.map(r=>({label:r.label,hardUpdate:r.hardUpdate,ios:r.ios,android:r.android}))};
     _relEditKey=null; renderReleases();
-  }catch(e){ alert('Could not save: '+e.message); btn.disabled=false; btn.textContent='Save'; }
+  }catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
 }
 
 // ── SIDEBAR ─────────────────────────────────────────────────────────
