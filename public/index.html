@@ -146,7 +146,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rel-legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;font-size:12.5px;color:#6b7280}
 .rl-item{display:inline-flex;align-items:center;gap:7px}
 .rl-dot{width:11px;height:11px;border-radius:4px;border:1px solid;display:inline-block}
-.rel-list{display:flex;flex-direction:column;gap:16px;max-width:940px}
+.rel-layout{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.rel-list{display:flex;flex-direction:column;gap:16px;flex:1;min-width:min(100%,520px);max-width:940px}
+.rel-side{width:250px;flex-shrink:0;position:sticky;top:16px}
+.rel-side-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 18px}
+.rel-side-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:14px}
+.rel-legrow{display:flex;gap:10px;align-items:flex-start;margin-bottom:13px}
+.rel-legrow>:first-child{flex-shrink:0;margin-top:2px}
+.rel-legrow>div{display:flex;flex-direction:column;gap:2px}
+.rel-legrow b{font-size:12.5px;font-weight:700;color:#141210}
+.rel-legrow>div>span{font-size:12px;color:#6b7280;line-height:1.4}
+.rel-side-sep{height:1px;background:#f0eee9;margin:4px 0 13px}
 .rel-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 20px}
 .rel-card.cur{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.08)}
 .rel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
@@ -157,7 +167,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rel-edit:hover{background:#f9fafb;color:#374151}
 .rel-track{display:flex;align-items:center;gap:14px;padding:10px 0}
 .rel-track+.rel-track{border-top:1px dashed #f0eee9}
-.rel-plat{width:92px;flex-shrink:0;font-size:13px;font-weight:600;color:#374151}
+.rel-plat{width:104px;flex-shrink:0;font-size:13px;font-weight:600;color:#374151;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
 .rel-phases{display:flex;gap:8px;flex-wrap:wrap;flex:1}
 .rel-phase{flex:1;min-width:130px;border-radius:9px;padding:9px 12px;border:1px solid}
 .rel-phase .pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.9;margin-bottom:3px}
@@ -168,7 +178,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pf-test{background:#fffbeb;border-color:#fde68a}.pf-test .pl,.rl-dot.pf-test{color:#d97706}
 .pf-pub{background:#f0fdf4;border-color:#bbf7d0}.pf-pub .pl,.rl-dot.pf-pub{color:#16a34a}
 .rl-dot.pf-freeze{background:#fff1f2}.rl-dot.pf-dev{background:#eff6ff}.rl-dot.pf-test{background:#fffbeb}.rl-dot.pf-pub{background:#f0fdf4}
-.rel-edit-plat{font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.rel-edit-plat{font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rel-edit-plat .rel-hard-toggle{margin-left:auto}
 .rel-edit-fields{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
 .rel-edit-fields label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:#6b7280}
 .rel-edit-fields input[type=date]{border:1px solid #e5e7eb;border-radius:7px;padding:7px 9px;font-size:12.5px;font-family:inherit;color:#141210}
@@ -553,13 +564,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- CALENDAR -->
     <div id="page-calendar" class="page">
       <div class="ph"><h2>Release Calendar</h2><p>Planned schedule per platform. Edit any cycle to reflect the actual dates — timing often differs between iOS and Android.</p></div>
-      <div class="rel-legend">
-        <span class="rl-item"><span class="rl-dot pf-freeze"></span>Feature freeze</span>
-        <span class="rl-item"><span class="rl-dot pf-dev"></span>Development</span>
-        <span class="rl-item"><span class="rl-dot pf-test"></span>Testing &amp; Review</span>
-        <span class="rl-item"><span class="rl-dot pf-pub"></span>Publish</span>
+      <div class="rel-layout">
+        <div class="rel-list" id="rel-list"><div class="inc-empty">Loading…</div></div>
+        <aside class="rel-side">
+          <div class="rel-side-card">
+            <div class="rel-side-title">What each phase means</div>
+            <div class="rel-legrow"><span class="rl-dot pf-freeze"></span><div><b>Feature freeze</b><span>Last day to submit features for this release.</span></div></div>
+            <div class="rel-legrow"><span class="rl-dot pf-dev"></span><div><b>Development</b><span>Building the release.</span></div></div>
+            <div class="rel-legrow"><span class="rl-dot pf-test"></span><div><b>Testing &amp; Review</b><span>QA, then app-store review.</span></div></div>
+            <div class="rel-legrow"><span class="rl-dot pf-pub"></span><div><b>Publish</b><span>Release goes live in the stores.</span></div></div>
+            <div class="rel-side-sep"></div>
+            <div class="rel-legrow"><span class="rel-hard">⚡ Hard</span><div><b>Hard update</b><span>Users must update to this version. Set per platform.</span></div></div>
+          </div>
+        </aside>
       </div>
-      <div class="rel-list" id="rel-list"><div class="inc-empty">Loading…</div></div>
     </div>
 
     <!-- INCIDENT -->
@@ -1126,12 +1144,17 @@ function releaseCycles(){
 function defaultRelease(start){
   const d=o=>toKey(addDays(start,o));
   const base={freeze:d(0),devStart:d(0),devEnd:d(8),trStart:d(9),trEnd:d(14),publish:d(15)};
-  return {label:'',hardUpdate:false,ios:{...base},android:{...base}};
+  return {label:'',hard:{ios:false,android:false},ios:{...base},android:{...base}};
+}
+// Normalize a stored release: hard-update is per platform (legacy = per-release bool).
+function normRelease(r){
+  let hard=r.hard; if(!hard||typeof hard!=='object') hard={ios:!!r.hardUpdate,android:!!r.hardUpdate};
+  return {label:r.label||'',hard:{ios:!!hard.ios,android:!!hard.android},ios:{...(r.ios||{})},android:{...(r.android||{})}};
 }
 // A cycle's releases: the saved list (may be [] = skipped) or a single default.
 function cycleReleases(c){
   const ov=_releaseOverrides[c.key];
-  if(ov && Array.isArray(ov.items)) return ov.items.map(r=>({label:r.label||'',hardUpdate:!!r.hardUpdate,ios:{...(r.ios||{})},android:{...(r.android||{})}}));
+  if(ov && Array.isArray(ov.items)) return ov.items.map(normRelease);
   return [defaultRelease(c.start)];
 }
 function fmtK(k){ if(!k) return '—'; const d=parseDate(k); return `${d.getDate()} ${MS[d.getMonth()]}`; }
@@ -1141,10 +1164,10 @@ function relDays(a,b){ if(!a||!b) return null; const n=Math.round((parseDate(b)-
 function relPhase(cls,label,dateHtml,dur){
   return `<div class="rel-phase ${cls}"><div class="pl">${label}</div><div class="pd">${dateHtml}</div>${dur?`<div class="pdur">${dur}</div>`:''}</div>`;
 }
-function relTrack(icon,name,s){
+function relTrack(icon,name,s,isHard){
   s=s||{}; const dv=relDays(s.devStart,s.devEnd), tr=relDays(s.trStart,s.trEnd);
   return `<div class="rel-track">
-    <div class="rel-plat">${icon} ${name}</div>
+    <div class="rel-plat"><span>${icon} ${name}</span>${isHard?'<span class="rel-hard">⚡ Hard</span>':''}</div>
     <div class="rel-phases">
       ${relPhase('pf-freeze','Feature freeze',fmtK(s.freeze),'')}
       ${relPhase('pf-dev','Development',fmtRange(s.devStart,s.devEnd),dv?dv+' days':'')}
@@ -1155,9 +1178,8 @@ function relTrack(icon,name,s){
 }
 function releaseView(rel,idx,total){
   const name=rel.label||(total>1?`Release ${idx+1}`:'');
-  const badge=rel.hardUpdate?'<span class="rel-hard">⚡ Hard update</span>':'';
-  const head=(name||badge)?`<div class="rel-rhead">${name?`<span class="rel-rlabel">${escHtml(name)}</span>`:''}${badge}</div>`:'';
-  return `<div class="rel-release">${head}${relTrack('🍎','iOS',rel.ios)}${relTrack('🤖','Android',rel.android)}</div>`;
+  const head=name?`<div class="rel-rhead"><span class="rel-rlabel">${escHtml(name)}</span></div>`:'';
+  return `<div class="rel-release">${head}${relTrack('🍎','iOS',rel.ios,rel.hard.ios)}${relTrack('🤖','Android',rel.android,rel.hard.android)}</div>`;
 }
 function renderReleases(){
   const list=document.getElementById('rel-list'); if(!list) return;
@@ -1177,15 +1199,19 @@ function renderReleases(){
 }
 function relEditBlock(rel,idx){
   const flds=(p,obj)=>REL_LABELS.map(([f,l])=>`<label>${l}<input type="date" data-idx="${idx}" data-p="${p}" data-f="${f}" value="${(obj&&obj[f])||''}"></label>`).join('');
+  const platHead=(p,icon,name,other,otherLabel)=>`<div class="rel-edit-plat">
+      <span>${icon} ${name}</span>
+      <button class="rel-copy" onclick="copyRel(${idx},'${other}','${p}')">← copy from ${otherLabel}</button>
+      <label class="rel-hard-toggle"><input type="checkbox" data-idx="${idx}" data-role="hard" data-p="${p}" ${rel.hard[p]?'checked':''}> ⚡ Hard update</label>
+    </div>`;
   return `<div class="rel-edit-release" data-idx="${idx}">
     <div class="rel-edit-rtop">
       <input class="rel-label-input" data-idx="${idx}" data-role="label" placeholder="Release name (optional, e.g. Hotfix)" value="${escHtml(rel.label||'')}">
-      <label class="rel-hard-toggle"><input type="checkbox" data-idx="${idx}" data-role="hard" ${rel.hardUpdate?'checked':''}> ⚡ Hard update</label>
       <button class="rel-remove" onclick="relRemove(${idx})" title="Remove this release">✕</button>
     </div>
-    <div class="rel-edit-plat">🍎 iOS <button class="rel-copy" onclick="copyRel(${idx},'android','ios')">← copy from Android</button></div>
+    ${platHead('ios','🍎','iOS','android','Android')}
     <div class="rel-edit-fields">${flds('ios',rel.ios)}</div>
-    <div class="rel-edit-plat">🤖 Android <button class="rel-copy" onclick="copyRel(${idx},'ios','android')">← copy from iOS</button></div>
+    ${platHead('android','🤖','Android','ios','iOS')}
     <div class="rel-edit-fields">${flds('android',rel.android)}</div>
   </div>`;
 }
@@ -1206,8 +1232,9 @@ function relSyncFromDom(){
   card.querySelectorAll('.rel-edit-release').forEach(block=>{
     const idx=+block.getAttribute('data-idx'); const rel=_relEditItems[idx]; if(!rel) return;
     rel.label=block.querySelector('[data-role="label"]').value.trim();
-    rel.hardUpdate=block.querySelector('[data-role="hard"]').checked;
-    ['ios','android'].forEach(p=>{ rel[p]={}; block.querySelectorAll(`input[data-p="${p}"]`).forEach(i=>{ if(i.value) rel[p][i.getAttribute('data-f')]=i.value; }); });
+    rel.hard={ios:false,android:false};
+    block.querySelectorAll('input[data-role="hard"]').forEach(cb=>{ rel.hard[cb.getAttribute('data-p')]=cb.checked; });
+    ['ios','android'].forEach(p=>{ rel[p]={}; block.querySelectorAll(`input[data-p="${p}"][data-f]`).forEach(i=>{ if(i.value) rel[p][i.getAttribute('data-f')]=i.value; }); });
   });
 }
 function editRelease(key){
@@ -1247,7 +1274,7 @@ async function saveReleaseEdit(key,num){
   try{
     const r=await fetch('/api/releases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'Save failed');}
-    _releaseOverrides[key]={items:_relEditItems.map(r=>({label:r.label,hardUpdate:r.hardUpdate,ios:r.ios,android:r.android}))};
+    _releaseOverrides[key]={items:_relEditItems.map(r=>({label:r.label,hard:r.hard,ios:r.ios,android:r.android}))};
     _relEditKey=null; renderReleases();
   }catch(e){ alert('Could not save: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save';} }
 }
