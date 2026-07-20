@@ -1,8 +1,9 @@
 // Vercel serverless function → /api/incidents  (GET list · POST create · PATCH update · DELETE)
 const { listIncidents, createIncident, updateIncident, deleteIncident, HttpError } = require('../lib/store');
-const { getSession } = require('../lib/auth');
+const { getSession, denyUnauth } = require('../lib/auth');
 
 module.exports = async (req, res) => {
+  if (denyUnauth(req, res)) return;
   try {
     if (req.method === 'GET')  return res.status(200).json(await listIncidents());
     if (req.method === 'POST') {

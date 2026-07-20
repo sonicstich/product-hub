@@ -1,7 +1,9 @@
 // Vercel serverless function → GET /api/tasks
 const { listTasks, HttpError } = require('../lib/notion');
+const { denyUnauth } = require('../lib/auth');
 
 module.exports = async (req, res) => {
+  if (denyUnauth(req, res)) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   try {
     res.status(200).json(await listTasks());

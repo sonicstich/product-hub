@@ -1819,6 +1819,8 @@ loadIncidents(); // populate the sidebar badge on first load
 
 // Show the signed-in Slack user in the sidebar footer (only when auth is on).
 fetch('/api/auth/me').then(r=>r.json()).then(d=>{
+  // Gate on: if sign-in is required and we're not signed in, bounce to Slack.
+  if(d && d.authEnabled && !d.authenticated){ window.location.href='/api/auth/login'; return; }
   if(!d||!d.authenticated||!d.user) return;
   const box=document.getElementById('sb-account'); if(!box) return;
   const name=(d.user.name||d.user.email||'User').trim();

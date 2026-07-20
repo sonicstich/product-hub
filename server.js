@@ -29,6 +29,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Gate all /api routes behind Slack sign-in (except the auth flow + health).
+// No-op when auth isn't configured (fail-open, same as production).
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth') || req.path === '/status') return next();
+  if (authLib.denyUnauth(req, res)) return;
+  next();
+});
+
 app.post('/api/create-task', async (req, res) => {
   try { res.json(await createTask(req.body)); }
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
