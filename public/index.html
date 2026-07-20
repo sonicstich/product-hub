@@ -37,6 +37,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toggle-btn:hover{background:rgba(255,255,255,.14);color:white}
 .toggle-btn svg{transition:transform .25s}
 .collapsed .toggle-btn svg{transform:rotate(180deg)}
+.sb-account{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:5px 6px;border-radius:8px}
+.sb-acc-avatar{width:26px;height:26px;border-radius:50%;background:#E07532;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;background-size:cover;background-position:center}
+.sb-acc-name{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-acc-logout{color:rgba(255,255,255,.4);flex-shrink:0;display:flex;transition:color .15s}
+.sb-acc-logout:hover{color:rgba(255,255,255,.9)}
+.collapsed .sb-account{display:none!important}
 
 /* ── MAIN ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
@@ -499,6 +505,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </nav>
   <div class="sb-footer">
+    <div class="sb-account" id="sb-account" style="display:none">
+      <div class="sb-acc-avatar" id="sb-acc-avatar"></div>
+      <div class="sb-acc-name" id="sb-acc-name"></div>
+      <a class="sb-acc-logout" href="/api/auth/logout" title="Sign out">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
     <button class="toggle-btn" onclick="toggleSidebar()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
@@ -1803,6 +1816,18 @@ async function removeIncident(id){
 }
 
 loadIncidents(); // populate the sidebar badge on first load
+
+// Show the signed-in Slack user in the sidebar footer (only when auth is on).
+fetch('/api/auth/me').then(r=>r.json()).then(d=>{
+  if(!d||!d.authenticated||!d.user) return;
+  const box=document.getElementById('sb-account'); if(!box) return;
+  const name=(d.user.name||d.user.email||'User').trim();
+  const av=document.getElementById('sb-acc-avatar');
+  if(d.user.picture){ av.style.backgroundImage=`url("${d.user.picture}")`; }
+  else { av.textContent=(name[0]||'U').toUpperCase(); }
+  document.getElementById('sb-acc-name').textContent=name;
+  box.style.display='flex';
+}).catch(()=>{});
 
 // ── CREATE TASK ──────────────────────────────────────────────────────
 (function initTaskForm(){

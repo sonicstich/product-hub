@@ -1,10 +1,14 @@
 // Vercel serverless function → /api/incidents  (GET list · POST create · PATCH update · DELETE)
 const { listIncidents, createIncident, updateIncident, deleteIncident, HttpError } = require('../lib/store');
+const { getSession } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   try {
     if (req.method === 'GET')  return res.status(200).json(await listIncidents());
-    if (req.method === 'POST') return res.status(201).json(await createIncident(req.body || {}));
+    if (req.method === 'POST') {
+      const s = getSession(req);
+      return res.status(201).json(await createIncident(req.body || {}, { reporterId: s && s.sub }));
+    }
     if (req.method === 'PATCH') {
       const { id, ...patch } = req.body || {};
       return res.status(200).json(await updateIncident(id, patch));
