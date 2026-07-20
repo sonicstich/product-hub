@@ -157,6 +157,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rel-legrow b{font-size:12.5px;font-weight:700;color:#141210}
 .rel-legrow>div>span{font-size:12px;color:#6b7280;line-height:1.4}
 .rel-side-sep{height:1px;background:#f0eee9;margin:4px 0 13px}
+.rel-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin:6px 0 2px;padding:0 2px}
+.rel-list>.rel-section-title:first-child{margin-top:0}
+.rel-past-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-top:22px}
+.rel-past-toggle:hover{color:#6b7280}
+.rel-past-chevron{transition:transform .18s;flex-shrink:0}
+.rel-past-chevron.open{transform:rotate(90deg)}
+.rel-card.past{opacity:.72}
+.rel-card.past:hover{opacity:1}
 .rel-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 20px}
 .rel-card.cur{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.08)}
 .rel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
@@ -454,7 +462,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="nav-section">
-      <div class="nav-section-label">Analytics</div>
+      <div class="nav-section-label">Useful links</div>
+      <div class="nav-item" onclick="window.open('https://admin.cuspwealth.com','_blank')">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+        <span class="nav-label">Admin panel</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto;opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </div>
       <div class="nav-item" onclick="window.open('https://metabase.cuspwealth.com/','_blank')">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg></div>
         <span class="nav-label">Metabase</span>
@@ -517,7 +530,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <li>Open Incidents — track and update ongoing issues</li>
               <li>Create Task — send a new task to the product team</li>
               <li>Report Incident — log a production issue with full context</li>
-              <li>Analytics — Metabase and Amplitude</li>
+              <li>Useful links — admin panel, Metabase, Amplitude</li>
               <li>Documentation — team guides and references</li>
             </ul>
           </div>
@@ -1127,18 +1140,25 @@ function renderSprints(anchor){
 renderSprints(currentAnchor());
 
 // ── RELEASE CYCLES (multi-release per sprint, editable, saved to Supabase) ──
+const RELEASE_START = parseDate('2026-01-01');
 const RELEASE_END = parseDate('2026-12-31');
 let _releaseOverrides = {}; // cycleKey → { items: [release, …] }
 let _releasesLoaded = false;
 let _relEditKey = null;
 let _relEditItems = [];      // working copy of a cycle's releases while editing
+let _relPastOpen = false;    // whether the Past sprints section is expanded
 const REL_LABELS = [['freeze','Feature freeze'],['devStart','Dev start'],['devEnd','Dev end'],['trStart','Test & Review start'],['trEnd','Test & Review end'],['publish','Publish']];
 
-// Cycles from the current one through end-2026 (fixed cadence).
+// All cycles across 2026 (fixed cadence): past ones back to Jan + the current
+// one + future ones to end-2026. Returned ascending by start date.
 function releaseCycles(){
-  const a=currentAnchor(); const out=[]; let n=a.num, s=new Date(a.start);
-  while(s<=RELEASE_END){ out.push({key:toKey(s), num:n, start:new Date(s)}); n++; s=addDays(s,SPRINT_DAYS); }
-  return out;
+  const a=currentAnchor();
+  const back=[]; let n=a.num, s=new Date(a.start);
+  while(s>=RELEASE_START){ back.push({key:toKey(s), num:n, start:new Date(s)}); n--; s=addDays(s,-SPRINT_DAYS); }
+  back.reverse();
+  const fwd=[]; n=a.num+1; s=addDays(a.start,SPRINT_DAYS);
+  while(s<=RELEASE_END){ fwd.push({key:toKey(s), num:n, start:new Date(s)}); n++; s=addDays(s,SPRINT_DAYS); }
+  return back.concat(fwd);
 }
 // One default release seeded from the cadence (iOS/Android identical).
 function defaultRelease(start){
@@ -1181,21 +1201,34 @@ function releaseView(rel,idx,total){
   const head=name?`<div class="rel-rhead"><span class="rel-rlabel">${escHtml(name)}</span></div>`:'';
   return `<div class="rel-release">${head}${relTrack('🍎','iOS',rel.ios,rel.hard.ios)}${relTrack('🤖','Android',rel.android,rel.hard.android)}</div>`;
 }
+function relCard(c){
+  const isCur=today>=c.start&&today<=addDays(c.start,SPRINT_SPAN);
+  if(_relEditKey===c.key) return relEditCard(c,isCur);
+  const rels=cycleReleases(c);
+  const body=rels.length ? rels.map((r,i)=>releaseView(r,i,rels.length)).join('') : '<div class="rel-none">No release this sprint</div>';
+  const isPast=c.start<currentAnchor().start;
+  return `<div class="rel-card ${isCur?'cur':''} ${isPast?'past':''}">
+    <div class="rel-head">
+      <div class="rel-title">Sprint ${c.num}${isCur?'<span class="rel-badge">Current</span>':''}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div>
+      <button class="rel-edit" onclick="editRelease('${c.key}')">✎ Edit</button>
+    </div>
+    ${body}
+  </div>`;
+}
 function renderReleases(){
   const list=document.getElementById('rel-list'); if(!list) return;
-  list.innerHTML=releaseCycles().map(c=>{
-    const isCur=today>=c.start&&today<=addDays(c.start,SPRINT_SPAN);
-    if(_relEditKey===c.key) return relEditCard(c,isCur);
-    const rels=cycleReleases(c);
-    const body=rels.length ? rels.map((r,i)=>releaseView(r,i,rels.length)).join('') : '<div class="rel-none">No release this sprint</div>';
-    return `<div class="rel-card ${isCur?'cur':''}">
-      <div class="rel-head">
-        <div class="rel-title">Sprint ${c.num}${isCur?'<span class="rel-badge">Current</span>':''}<span class="rel-dates">${fmt(c.start)} → ${fmt(addDays(c.start,SPRINT_SPAN))}</span></div>
-        <button class="rel-edit" onclick="editRelease('${c.key}')">✎ Edit</button>
-      </div>
-      ${body}
-    </div>`;
-  }).join('');
+  const curStart=currentAnchor().start;
+  const cycles=releaseCycles();
+  const upcoming=cycles.filter(c=>c.start>=curStart);              // current + future, ascending
+  const past=cycles.filter(c=>c.start<curStart).reverse();          // most recent first
+  let html='<div class="rel-section-title">Upcoming</div>'+upcoming.map(relCard).join('');
+  if(past.length){
+    html+=`<div class="rel-section-title rel-past-toggle" onclick="_relPastOpen=!_relPastOpen;renderReleases()">
+      <svg class="rel-past-chevron ${_relPastOpen?'open':''}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      Past sprints (${past.length})</div>`;
+    if(_relPastOpen) html+=past.map(relCard).join('');
+  }
+  list.innerHTML=html;
 }
 function relEditBlock(rel,idx){
   const flds=(p,obj)=>REL_LABELS.map(([f,l])=>`<label>${l}<input type="date" data-idx="${idx}" data-p="${p}" data-f="${f}" value="${(obj&&obj[f])||''}"></label>`).join('');
