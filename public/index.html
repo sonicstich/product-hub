@@ -16,6 +16,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb-logo{width:32px;height:32px;background:linear-gradient(135deg,#E07532,#C8641C);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sb-brand-name{color:white;font-weight:700;font-size:15px;white-space:nowrap;transition:opacity .2s;letter-spacing:-.3px}
 .collapsed .sb-brand-name{opacity:0}
+/* Login landing */
+#login-screen{position:fixed;inset:0;z-index:9999;background:#141210;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{text-align:center;max-width:400px}
+.login-logo{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,#E07532,#C8641C);display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
+#login-screen h1{font-size:30px;font-weight:800;color:#fff;margin:0 0 10px;letter-spacing:-.02em}
+#login-screen p{font-size:14.5px;color:rgba(255,255,255,.55);line-height:1.55;margin:0 0 28px}
+.login-slack-btn{display:inline-flex;align-items:center;gap:11px;background:#fff;color:#1a1a1a;font-size:15px;font-weight:600;padding:13px 24px;border-radius:11px;text-decoration:none;transition:transform .12s,box-shadow .18s}
+.login-slack-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.login-foot{margin-top:22px;font-size:12px;color:rgba(255,255,255,.3)}
 
 .sb-nav{flex:1;padding:12px 8px;overflow-y:auto;overflow-x:hidden}
 .sb-nav::-webkit-scrollbar{width:6px}
@@ -425,6 +434,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <!-- ── SIDEBAR ── -->
+<!-- LOGIN LANDING — shown when Slack sign-in is required and the user isn't signed in -->
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+    <h1>Product Hub</h1>
+    <p>The product team's hub — releases, incidents, tasks and docs. Sign in with your work Slack to continue.</p>
+    <a class="login-slack-btn" href="/api/auth/login">
+      <svg width="18" height="18" viewBox="0 0 122.8 122.8" aria-hidden="true"><path d="M25.8 77.6a12.9 12.9 0 1 1-12.9-12.9h12.9z" fill="#E01E5A"/><path d="M32.3 77.6a12.9 12.9 0 0 1 25.8 0v32.3a12.9 12.9 0 0 1-25.8 0z" fill="#E01E5A"/><path d="M45.2 25.8a12.9 12.9 0 1 1 12.9-12.9v12.9z" fill="#36C5F0"/><path d="M45.2 32.3a12.9 12.9 0 0 1 0 25.8H12.9a12.9 12.9 0 0 1 0-25.8z" fill="#36C5F0"/><path d="M97 45.2a12.9 12.9 0 1 1 12.9 12.9H97z" fill="#2EB67D"/><path d="M90.5 45.2a12.9 12.9 0 0 1-25.8 0V12.9a12.9 12.9 0 0 1 25.8 0z" fill="#2EB67D"/><path d="M77.6 97a12.9 12.9 0 1 1-12.9 12.9V97z" fill="#ECB22E"/><path d="M77.6 90.5a12.9 12.9 0 0 1 0-25.8h32.3a12.9 12.9 0 0 1 0 25.8z" fill="#ECB22E"/></svg>
+      Sign in with Slack
+    </a>
+    <div class="login-foot">Restricted to the CUSP Slack workspace</div>
+  </div>
+</div>
+
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
     <div class="sb-logo">
@@ -1819,8 +1842,8 @@ loadIncidents(); // populate the sidebar badge on first load
 
 // Show the signed-in Slack user in the sidebar footer (only when auth is on).
 fetch('/api/auth/me').then(r=>r.json()).then(d=>{
-  // Gate on: if sign-in is required and we're not signed in, bounce to Slack.
-  if(d && d.authEnabled && !d.authenticated){ window.location.href='/api/auth/login'; return; }
+  // Gate on: if sign-in is required and we're not signed in, show the landing page.
+  if(d && d.authEnabled && !d.authenticated){ document.getElementById('login-screen').style.display='flex'; return; }
   if(!d||!d.authenticated||!d.user) return;
   const box=document.getElementById('sb-account'); if(!box) return;
   const name=(d.user.name||d.user.email||'User').trim();
