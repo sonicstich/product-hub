@@ -38,7 +38,7 @@ app.use('/api', (req, res, next) => {
 });
 
 app.post('/api/create-task', async (req, res) => {
-  try { res.json(await createTask(req.body)); }
+  try { const s = authLib.getSession(req); res.json(await createTask(req.body, { submittedBy: s && (s.name || s.email) })); }
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
 });
 
@@ -48,7 +48,7 @@ app.get('/api/tasks', async (req, res) => {
 });
 
 app.post('/api/create-feedback', async (req, res) => {
-  try { res.json(await createFeedback(req.body)); }
+  try { const s = authLib.getSession(req); res.json(await createFeedback(req.body, { submittedBy: s && (s.name || s.email) })); }
   catch (err) { res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message }); }
 });
 
