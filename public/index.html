@@ -274,6 +274,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .prio-lbl input:checked+.p-medium{border-color:#E07532;background:rgba(224,117,50,.10);color:#E07532}
 .prio-lbl input:checked+.p-high{border-color:#ea580c;background:#fff7ed;color:#ea580c}
 .prio-lbl input:checked+.p-critical{border-color:#dc2626;background:#fef2f2;color:#dc2626;font-weight:700}
+.prio-lbl input:checked+.p-yes{border-color:#16a34a;background:#f0fdf4;color:#16a34a;font-weight:700}
+.fin-hint{font-weight:400;color:#9ca3af;font-size:12.5px}
 .critical-box{display:none;margin-top:10px;padding:12px 14px;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:8px;animation:fadeIn .15s ease}
 .critical-box.show{display:block}
 .critical-box label{color:#b91c1c!important}
@@ -366,6 +368,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .inc-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#f3f4f6;color:#4b5563}
 .inc-tag.inc-plat{background:#fff;border:1px solid #d1d5db;color:#374151}
+.inc-tag.inc-fin{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
 .inc-pri{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 .inc-pri.Critical{background:#fee2e2;color:#b91c1c}
 .inc-pri.High{background:#ffedd5;color:#c2410c}
@@ -707,6 +710,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div class="field" id="other-field" style="display:none">
               <label>Specify area</label>
               <input class="inp" id="inc-other" type="text" placeholder="e.g. push notifications, user profile...">
+            </div>
+            <div class="field">
+              <label>Does this need the finance team? <span class="fin-hint">(e.g. deposit / refund to a user)</span></label>
+              <div class="prio-group">
+                <label class="prio-lbl"><input type="radio" name="inc-finance" value="no" checked><span class="p-low">No</span></label>
+                <label class="prio-lbl"><input type="radio" name="inc-finance" value="yes"><span class="p-yes">💰 Yes</span></label>
+              </div>
             </div>
             <div class="field">
               <label>Screenshots</label>
@@ -1599,6 +1609,7 @@ async function handleSubmit(e){
   const other=document.getElementById('inc-other').value.trim();
   if(areas.includes('Other')){ areas=areas.filter(a=>a!=='Other'); if(other) areas.push(other); }
   const platforms=[...document.querySelectorAll('#inc-platforms .chip.on input')].map(i=>i.value);
+  const financeSupport=document.querySelector('[name=inc-finance]:checked')?.value==='yes';
   const images=_incImages.map(im=>im.dataUrl);
   if(!priority){
     const g=document.getElementById('inc-prio-group'), h=document.getElementById('inc-prio-hint');
@@ -1614,7 +1625,7 @@ async function handleSubmit(e){
   }
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks};
+    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport};
     if(_editIncidentId){
       const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
       const d=await r.json().catch(()=>({}));
@@ -1715,6 +1726,7 @@ function renderIncidents(){
             ${plats}
             ${areas}
             ${i.affected?`<span class="inc-tag">👥 ${escHtml(i.affected)}</span>`:''}
+            ${i.financeSupport?`<span class="inc-tag inc-fin">💰 Finance support</span>`:''}
             <span class="inc-date">📅 ${fmtIncDate(i.date)}</span>
           </div>
           ${imgs}
@@ -1813,6 +1825,9 @@ function fillIncidentForm(inc){
   }
   document.getElementById('other-field').style.display=extra.length?'block':'none';
   document.getElementById('inc-other').value=extra.join(', ');
+
+  const finVal=inc.financeSupport?'yes':'no';
+  document.querySelectorAll('[name=inc-finance]').forEach(r=>{ r.checked=r.value===finVal; });
 
   _incImages=(inc.images||[]).map((dataUrl,ix)=>({name:'image-'+(ix+1),dataUrl}));
   renderIncImages();
