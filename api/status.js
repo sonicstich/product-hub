@@ -1,11 +1,15 @@
 // Vercel serverless function → GET /api/status (health check)
 const { storageConfigured } = require('../lib/store');
-const { notionReady, oauthConfigured, createBugTask } = require('../lib/notion');
+const { notionReady, oauthConfigured, createBugTask, debugBoardDb } = require('../lib/notion');
 const { slackConfigured } = require('../lib/slack');
 
 module.exports = async (req, res) => {
   // TEMP diagnostic: /api/status?bugtask=1 runs the real bug-task create and
   // returns the exact Notion error. Remove once the integration is verified.
+  if (req.query && req.query.dbinfo) {
+    try { return res.status(200).json(await debugBoardDb()); }
+    catch (e) { return res.status(200).json({ error: e && e.message }); }
+  }
   if (req.query && req.query.bugtask) {
     try {
       const task = await createBugTask({
