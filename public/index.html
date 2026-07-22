@@ -720,6 +720,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
             </div>
             <div class="field">
+              <label>Assign task to <span class="fin-hint">(who should pick up the dev task — optional)</span></label>
+              <select class="inp" id="inc-assignee">
+                <option value="">— Not assigned</option>
+              </select>
+            </div>
+            <div class="field">
               <label>Affected user(s) in admin <span class="fin-hint">(paste the admin.cuspwealth.com profile link — add more than one if needed)</span></label>
               <div class="mockup-wrap">
                 <div style="display:flex;gap:8px">
@@ -1630,6 +1636,24 @@ function renderIncUserList(){
     </div>`).join('');
 }
 
+// Developers shown in the "Assign task to" dropdown. Whoever is picked becomes
+// the Notion Assignee on the auto-created dev task. Edit this list to add /
+// remove people — `id` is their Notion user id (ask Claude to look one up).
+const DEV_ASSIGNEES=[
+  {name:'Kirill Demchenko', id:'4bac3dda-9571-40fd-9d64-03ce0a4a3866'},
+  {name:'Sergey Andreev',   id:'c60f031d-305d-46a1-be0e-dd018d173e32'},
+  {name:'Sergei Grabovoi',  id:'464f594e-e0dd-4498-af02-ce7f9e2f474f'},
+  {name:'Radi',             id:'2bbd872b-594c-81b8-afbb-0002d0336132'},
+  {name:'Yuriy Kuchanov',   id:'ea242ffb-0eb2-4e54-bd1c-eaff5c4aa3b5'},
+];
+function fillAssigneeDropdown(){
+  const sel=document.getElementById('inc-assignee');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Not assigned</option>'+
+    DEV_ASSIGNEES.map(d=>`<option value="${escHtml(d.id)}">${escHtml(d.name)}</option>`).join('');
+}
+fillAssigneeDropdown();
+
 async function handleSubmit(e){
   e.preventDefault();
   const btn=e.target.querySelector('.btn-sub');
@@ -1658,7 +1682,8 @@ async function handleSubmit(e){
   }
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers};
+    const assigneeId=document.getElementById('inc-assignee')?.value||'';
+    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers,assigneeId};
     if(_editIncidentId){
       const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
       const d=await r.json().catch(()=>({}));
@@ -1689,6 +1714,7 @@ function resetForm(){
   _incImages=[]; renderIncImages();
   _incTasks=[]; renderIncTaskList();
   _incUsers=[]; renderIncUserList();
+  const asg=document.getElementById('inc-assignee'); if(asg) asg.value='';
   document.getElementById('inc-prio-hint').textContent='';
   document.getElementById('inc-prio-group').classList.remove('err');
   document.getElementById('inc-plat-hint').textContent='';
@@ -1870,6 +1896,7 @@ function fillIncidentForm(inc){
   renderIncTaskList();
   _incUsers=[...(inc.userLinks||[])];
   renderIncUserList();
+  const asg=document.getElementById('inc-assignee'); if(asg) asg.value='';
 }
 
 async function changeStatus(id,status){
