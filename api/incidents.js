@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET')  return res.status(200).json(await listIncidents());
     if (req.method === 'POST') {
       const s = getSession(req);
-      return res.status(201).json(await createIncident(req.body || {}, { reporterId: s && s.sub }));
+      return res.status(201).json(await createIncident(req.body || {}, { reporterId: s && s.sub, reporterName: s && (s.name || s.email) }));
     }
     if (req.method === 'PATCH') {
       const { id, ...patch } = req.body || {};

@@ -84,7 +84,7 @@ app.get('/api/releases',  wrap(() => store.listReleases()));
 app.post('/api/releases', async (req, res) => { try { res.json(await store.saveRelease(req.body || {})); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 
 app.get('/api/incidents',    wrap(req => store.listIncidents()));
-app.post('/api/incidents',   async (req, res) => { try { const s = authLib.getSession(req); res.status(201).json(await store.createIncident(req.body || {}, { reporterId: s && s.sub })); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
+app.post('/api/incidents',   async (req, res) => { try { const s = authLib.getSession(req); res.status(201).json(await store.createIncident(req.body || {}, { reporterId: s && s.sub, reporterName: s && (s.name || s.email) })); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 app.patch('/api/incidents',  wrap(req => { const { id, ...p } = req.body || {}; return store.updateIncident(id, p); }));
 app.delete('/api/incidents', wrap(req => store.deleteIncident((req.body && req.body.id) || req.query.id)));
 
