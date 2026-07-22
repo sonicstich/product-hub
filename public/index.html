@@ -390,6 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-task-link{font-size:11.5px;font-weight:700;color:#E07532;text-decoration:none;padding:4px 10px;background:rgba(224,117,50,.08);border-radius:6px;border:1px solid rgba(224,117,50,.2);transition:background .15s}
 .inc-task-link:hover{background:rgba(224,117,50,.16)}
 .inc-slack-link{color:#5b3b6b;background:rgba(74,21,75,.07);border-color:rgba(74,21,75,.18)}
+.inc-user-link{color:#2563eb;background:rgba(37,99,235,.07);border-color:rgba(37,99,235,.18)}
 .inc-slack-link:hover{background:rgba(74,21,75,.14)}
 .inc-task-edit-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .inc-task-edit-item{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#f9fafb;border-radius:7px;font-size:12.5px}
@@ -716,6 +717,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div class="prio-group">
                 <label class="prio-lbl"><input type="radio" name="inc-finance" value="no" checked><span class="p-low">No</span></label>
                 <label class="prio-lbl"><input type="radio" name="inc-finance" value="yes"><span class="p-yes">💰 Yes</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label>Affected user(s) in admin <span class="fin-hint">(paste the admin.cuspwealth.com profile link — add more than one if needed)</span></label>
+              <div class="mockup-wrap">
+                <div style="display:flex;gap:8px">
+                  <input class="inp" id="inc-user-url" type="text" placeholder="https://admin.cuspwealth.com/users/…" onkeydown="if(event.key==='Enter'){event.preventDefault();addIncUser();}">
+                  <button type="button" class="mockup-file-btn" style="flex-shrink:0" onclick="addIncUser()">+ Add</button>
+                </div>
+                <div class="inc-task-edit-list" id="inc-user-list" style="margin-top:10px"></div>
               </div>
             </div>
             <div class="field">
@@ -1597,6 +1608,28 @@ function renderIncTaskList(){
     </div>`).join('');
 }
 
+// Admin-panel links for the affected user(s). Same repeatable-input pattern as
+// linked tasks — 0..N links, shown in the card and posted into the Slack thread.
+let _incUsers=[];
+function addIncUser(){
+  const input=document.getElementById('inc-user-url');
+  const url=input.value.trim();
+  if(!url) return;
+  if(!/^https?:\/\//i.test(url)){ alert('Please paste a valid link (starting with http:// or https://)'); return; }
+  _incUsers.push(url);
+  input.value='';
+  renderIncUserList();
+}
+function removeIncUser(i){ _incUsers.splice(i,1); renderIncUserList(); }
+function renderIncUserList(){
+  document.getElementById('inc-user-list').innerHTML=_incUsers.map((url,ix)=>`
+    <div class="inc-task-edit-item">
+      <span>User ${ix+1}</span>
+      <a href="${escHtml(url)}" target="_blank" class="inc-task-edit-link">${escHtml(url)}</a>
+      <button type="button" onclick="removeIncUser(${ix})">✕</button>
+    </div>`).join('');
+}
+
 async function handleSubmit(e){
   e.preventDefault();
   const btn=e.target.querySelector('.btn-sub');
@@ -1625,7 +1658,7 @@ async function handleSubmit(e){
   }
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport};
+    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers};
     if(_editIncidentId){
       const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
       const d=await r.json().catch(()=>({}));
@@ -1655,6 +1688,7 @@ function resetForm(){
   document.getElementById('success-box').style.display='none';
   _incImages=[]; renderIncImages();
   _incTasks=[]; renderIncTaskList();
+  _incUsers=[]; renderIncUserList();
   document.getElementById('inc-prio-hint').textContent='';
   document.getElementById('inc-prio-group').classList.remove('err');
   document.getElementById('inc-plat-hint').textContent='';
@@ -1713,9 +1747,10 @@ function renderIncidents(){
     const plats=(i.platforms||[]).map(p=>`<span class="inc-tag inc-plat">${PLAT_ICON[p]||''} ${escHtml(p)}</span>`).join('');
     const imgs=(i.images||[]).length?`<div class="inc-imgs">${i.images.map((src,ix)=>`<img src="${escHtml(src)}" onclick="openLightboxFrom('${i.id}',${ix})">`).join('')}</div>`:'';
     const taskLinks=(i.tasks||[]).map((url,ix)=>`<a href="${escHtml(url)}" target="_blank" class="inc-task-link">🔗 Task ${ix+1}</a>`).join('');
+    const userLinks=(i.userLinks||[]).map((url,ix)=>`<a href="${escHtml(url)}" target="_blank" class="inc-task-link inc-user-link">👤 User ${ix+1}</a>`).join('');
     const slackUrl=i.slackUrl||(slackOrigin&&i.slackTs&&i.slackChannel?`${slackOrigin}/archives/${i.slackChannel}/p${String(i.slackTs).replace('.','')}`:'');
     const slackLink=slackUrl?`<a href="${escHtml(slackUrl)}" target="_blank" class="inc-task-link inc-slack-link">💬 Slack thread</a>`:'';
-    const tasks=(taskLinks||slackLink)?`<div class="inc-tasks">${taskLinks}${slackLink}</div>`:'';
+    const tasks=(taskLinks||userLinks||slackLink)?`<div class="inc-tasks">${taskLinks}${userLinks}${slackLink}</div>`:'';
     return `<div class="inc-card ${i.status==='Resolved'?'resolved':''}">
       <div class="inc-top">
         <div style="flex:1;min-width:0">
@@ -1833,6 +1868,8 @@ function fillIncidentForm(inc){
   renderIncImages();
   _incTasks=[...(inc.tasks||[])];
   renderIncTaskList();
+  _incUsers=[...(inc.userLinks||[])];
+  renderIncUserList();
 }
 
 async function changeStatus(id,status){
