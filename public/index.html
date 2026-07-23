@@ -247,6 +247,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .req{color:#ef4444;margin-left:2px}
 .inp,.txa{width:100%;padding:9px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s;background:white}
 .inp:focus,.txa:focus{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+/* Custom "Assign task to" dropdown */
+.asg{position:relative;max-width:420px}
+.asg-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#111827;font-family:inherit;text-align:left;transition:border-color .15s,box-shadow .15s}
+.asg-trigger:hover{border-color:#b3b8bf}
+.asg.open .asg-trigger{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.asg-cur{display:flex;align-items:center;gap:10px;min-width:0}
+.asg-chev{width:16px;height:16px;color:#9ca3af;flex-shrink:0;transition:transform .18s}
+.asg.open .asg-chev{transform:rotate(180deg)}
+.asg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.3px}
+.asg-av.none{background:#f1f3f5;color:#adb2b9;border:1.5px dashed #d1d5db}
+.asg-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asg-name.ph{color:#9ca3af}
+.asg-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:300;background:#fff;border:1.5px solid #e8e5e0;border-radius:12px;padding:6px;box-shadow:0 16px 40px rgba(20,18,16,.14),0 2px 8px rgba(20,18,16,.06);animation:dpIn .13s ease;max-height:300px;overflow-y:auto}
+.asg-opt{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:#111827;transition:background .12s}
+.asg-opt:hover{background:#FDF6EE}
+.asg-opt.sel{background:rgba(224,117,50,.1)}
+.asg-check{margin-left:auto;color:#E07532;width:16px;height:16px;flex-shrink:0;opacity:0}
+.asg-opt.sel .asg-check{opacity:1}
+.asg-div{height:1px;background:#f0eeeb;margin:5px 4px}
 .txa{resize:vertical;min-height:88px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -721,9 +740,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div class="field">
               <label>Assign task to <span class="fin-hint">(who should pick up the dev task — optional)</span></label>
-              <select class="inp" id="inc-assignee">
-                <option value="">— Not assigned</option>
-              </select>
+              <div class="asg" id="asg-wrap">
+                <input type="hidden" id="inc-assignee" value="">
+                <button type="button" class="asg-trigger" id="asg-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleAsg(event)">
+                  <span class="asg-cur" id="asg-cur"></span>
+                  <svg class="asg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="asg-menu" id="asg-menu" role="listbox" style="display:none"></div>
+              </div>
             </div>
             <div class="field">
               <label>Affected user(s) in admin <span class="fin-hint">(paste the admin.cuspwealth.com profile link — add more than one if needed)</span></label>
@@ -1646,13 +1670,36 @@ const DEV_ASSIGNEES=[
   {name:'Radi',             id:'2bbd872b-594c-81b8-afbb-0002d0336132'},
   {name:'Yuriy Kuchanov',   id:'ea242ffb-0eb2-4e54-bd1c-eaff5c4aa3b5'},
 ];
-function fillAssigneeDropdown(){
-  const sel=document.getElementById('inc-assignee');
-  if(!sel) return;
-  sel.innerHTML='<option value="">— Not assigned</option>'+
-    DEV_ASSIGNEES.map(d=>`<option value="${escHtml(d.id)}">${escHtml(d.name)}</option>`).join('');
+// Custom dropdown: colored initials avatar + styled menu, backed by a hidden
+// input (#inc-assignee) so the submit path is unchanged.
+const ASG_COLORS=['#E07532','#2563eb','#059669','#7c3aed','#db2777','#0891b2','#d97706','#4f46e5'];
+function asgColor(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0;return ASG_COLORS[h%ASG_COLORS.length];}
+function asgInitials(name){const p=(name||'').trim().split(/\s+/);return(((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
+function asgAvatar(d){return d?`<span class="asg-av" style="background:${asgColor(d.name)}">${escHtml(asgInitials(d.name))}</span>`:'<span class="asg-av none">–</span>';}
+let _asgOpen=false;
+function renderAsgTrigger(){
+  const cur=document.getElementById('asg-cur'); if(!cur) return;
+  const id=document.getElementById('inc-assignee').value;
+  const d=DEV_ASSIGNEES.find(x=>x.id===id);
+  cur.innerHTML=d?`${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>`
+                 :`<span class="asg-av none">–</span><span class="asg-name ph">Not assigned</span>`;
 }
-fillAssigneeDropdown();
+function renderAsgMenu(){
+  const menu=document.getElementById('asg-menu'); if(!menu) return;
+  const id=document.getElementById('inc-assignee').value;
+  const check='<svg class="asg-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const none=`<div class="asg-opt ${!id?'sel':''}" role="option" onclick="selectAsg('')"><span class="asg-av none">–</span><span class="asg-name ph">Not assigned</span>${check}</div>`;
+  const opts=DEV_ASSIGNEES.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>${check}</div>`).join('');
+  menu.innerHTML=none+'<div class="asg-div"></div>'+opts;
+}
+function openAsg(){renderAsgMenu();document.getElementById('asg-menu').style.display='block';document.getElementById('asg-wrap').classList.add('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','true');_asgOpen=true;}
+function closeAsg(){const w=document.getElementById('asg-wrap');if(!w)return;document.getElementById('asg-menu').style.display='none';w.classList.remove('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','false');_asgOpen=false;}
+function toggleAsg(e){if(e)e.stopPropagation();_asgOpen?closeAsg():openAsg();}
+function selectAsg(id){document.getElementById('inc-assignee').value=id;renderAsgTrigger();closeAsg();}
+function resetAsg(){const h=document.getElementById('inc-assignee');if(h)h.value='';renderAsgTrigger();}
+document.addEventListener('click',e=>{const w=document.getElementById('asg-wrap');if(_asgOpen&&w&&!w.contains(e.target))closeAsg();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_asgOpen)closeAsg();});
+renderAsgTrigger();
 
 async function handleSubmit(e){
   e.preventDefault();
@@ -1714,7 +1761,7 @@ function resetForm(){
   _incImages=[]; renderIncImages();
   _incTasks=[]; renderIncTaskList();
   _incUsers=[]; renderIncUserList();
-  const asg=document.getElementById('inc-assignee'); if(asg) asg.value='';
+  resetAsg();
   document.getElementById('inc-prio-hint').textContent='';
   document.getElementById('inc-prio-group').classList.remove('err');
   document.getElementById('inc-plat-hint').textContent='';
@@ -1896,7 +1943,7 @@ function fillIncidentForm(inc){
   renderIncTaskList();
   _incUsers=[...(inc.userLinks||[])];
   renderIncUserList();
-  const asg=document.getElementById('inc-assignee'); if(asg) asg.value='';
+  resetAsg();
 }
 
 async function changeStatus(id,status){
