@@ -1664,11 +1664,14 @@ function renderIncUserList(){
 // the Notion Assignee on the auto-created dev task. Edit this list to add /
 // remove people — `id` is their Notion user id (ask Claude to look one up).
 const DEV_ASSIGNEES=[
-  {name:'Kirill Demchenko', id:'4bac3dda-9571-40fd-9d64-03ce0a4a3866'},
-  {name:'Sergey Andreev',   id:'c60f031d-305d-46a1-be0e-dd018d173e32'},
-  {name:'Sergei Grabovoi',  id:'464f594e-e0dd-4498-af02-ce7f9e2f474f'},
-  {name:'Radi',             id:'2bbd872b-594c-81b8-afbb-0002d0336132'},
-  {name:'Yuriy Kuchanov',   id:'ea242ffb-0eb2-4e54-bd1c-eaff5c4aa3b5'},
+  {name:'Yuriy Kuchanov',   id:'ea242ffb-0eb2-4e54-bd1c-eaff5c4aa3b5', slack:'U0780P502VA'},
+  {name:'Sergey Andreev',   id:'c60f031d-305d-46a1-be0e-dd018d173e32', slack:'U077HN3FBK9'},
+  {name:'Sergei Grabovoi',  id:'464f594e-e0dd-4498-af02-ce7f9e2f474f', slack:'U0780P3V5S8'},
+  {name:'Nikola Yankov',    id:'222d872b-594c-8119-a394-000290cd3ff1', slack:'U0937P7EETZ'},
+  {name:'Maksim Lamanskiy', id:'777ee4d2-4139-4a85-9114-e4d863ee2ad2', slack:'U077Y92TGHG'},
+  {name:'Kirill Demchenko', id:'4bac3dda-9571-40fd-9d64-03ce0a4a3866', slack:'U077RKZ50DC'},
+  {name:'Ilia Pogudin',     id:'4764cc4f-7c10-4b9b-8e48-61e479c25e34', slack:'U077Y95J82E'},
+  {name:'Svilen Strahilov', id:'3a0d872b-594c-8147-949d-0002623048ab', slack:'U0BJ1783LCS'},
 ];
 // Custom dropdown: colored initials avatar + styled menu, backed by a hidden
 // input (#inc-assignee) so the submit path is unchanged.
@@ -1730,7 +1733,8 @@ async function handleSubmit(e){
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
     const assigneeId=document.getElementById('inc-assignee')?.value||'';
-    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers,assigneeId};
+    const assigneeSlackId=(DEV_ASSIGNEES.find(d=>d.id===assigneeId)||{}).slack||'';
+    const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers,assigneeId,assigneeSlackId};
     if(_editIncidentId){
       const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
       const d=await r.json().catch(()=>({}));
