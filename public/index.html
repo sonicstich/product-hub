@@ -248,22 +248,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inp,.txa{width:100%;padding:9px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s;background:white}
 .inp:focus,.txa:focus{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
 /* Custom "Assign task to" dropdown */
-.asg{position:relative;max-width:420px}
-.asg-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#111827;font-family:inherit;text-align:left;transition:border-color .15s,box-shadow .15s}
+.asg{position:relative;max-width:320px}
+.asg-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 11px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13.5px;color:#111827;font-family:inherit;text-align:left;transition:border-color .15s,box-shadow .15s}
 .asg-trigger:hover{border-color:#b3b8bf}
 .asg.open .asg-trigger{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
-.asg-cur{display:flex;align-items:center;gap:10px;min-width:0}
-.asg-chev{width:16px;height:16px;color:#9ca3af;flex-shrink:0;transition:transform .18s}
+.asg-cur{display:flex;align-items:center;gap:8px;min-width:0}
+.asg-chev{width:15px;height:15px;color:#9ca3af;flex-shrink:0;transition:transform .18s}
 .asg.open .asg-chev{transform:rotate(180deg)}
-.asg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.3px}
-.asg-av.none{background:#f1f3f5;color:#adb2b9;border:1.5px dashed #d1d5db}
+.asg-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.2px}
+.asg-av.none{background:#f3f4f6;color:#b0b5bc;border:1.25px dashed #d1d5db;font-size:11px}
 .asg-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.asg-name.ph{color:#9ca3af}
-.asg-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:300;background:#fff;border:1.5px solid #e8e5e0;border-radius:12px;padding:6px;box-shadow:0 16px 40px rgba(20,18,16,.14),0 2px 8px rgba(20,18,16,.06);animation:dpIn .13s ease;max-height:300px;overflow-y:auto}
-.asg-opt{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:#111827;transition:background .12s}
+.asg-name.asg-mut{color:#9ca3af}
+.asg-menu{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:300;background:#fff;border:1.5px solid #e8e5e0;border-radius:11px;padding:5px;box-shadow:0 14px 36px rgba(20,18,16,.13),0 2px 8px rgba(20,18,16,.05);animation:dpIn .13s ease;max-height:280px;overflow-y:auto}
+.asg-opt{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:13.5px;color:#111827;transition:background .12s}
 .asg-opt:hover{background:#FDF6EE}
 .asg-opt.sel{background:rgba(224,117,50,.1)}
-.asg-check{margin-left:auto;color:#E07532;width:16px;height:16px;flex-shrink:0;opacity:0}
+.asg-check{margin-left:auto;color:#E07532;width:15px;height:15px;flex-shrink:0;opacity:0}
 .asg-opt.sel .asg-check{opacity:1}
 .asg-div{height:1px;background:#f0eeeb;margin:5px 4px}
 .txa{resize:vertical;min-height:88px}
@@ -1682,13 +1682,13 @@ function renderAsgTrigger(){
   const id=document.getElementById('inc-assignee').value;
   const d=DEV_ASSIGNEES.find(x=>x.id===id);
   cur.innerHTML=d?`${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>`
-                 :`<span class="asg-av none">–</span><span class="asg-name ph">Not assigned</span>`;
+                 :`<span class="asg-av none">–</span><span class="asg-name asg-mut">Not assigned</span>`;
 }
 function renderAsgMenu(){
   const menu=document.getElementById('asg-menu'); if(!menu) return;
   const id=document.getElementById('inc-assignee').value;
   const check='<svg class="asg-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  const none=`<div class="asg-opt ${!id?'sel':''}" role="option" onclick="selectAsg('')"><span class="asg-av none">–</span><span class="asg-name ph">Not assigned</span>${check}</div>`;
+  const none=`<div class="asg-opt ${!id?'sel':''}" role="option" onclick="selectAsg('')"><span class="asg-av none">–</span><span class="asg-name asg-mut">Not assigned</span>${check}</div>`;
   const opts=DEV_ASSIGNEES.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>${check}</div>`).join('');
   menu.innerHTML=none+'<div class="asg-div"></div>'+opts;
 }
