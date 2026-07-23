@@ -252,6 +252,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .asg-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 11px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13.5px;color:#111827;font-family:inherit;text-align:left;transition:border-color .15s,box-shadow .15s}
 .asg-trigger:hover{border-color:#b3b8bf}
 .asg.open .asg-trigger{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.asg.err .asg-trigger{border-color:#fca5a5}
 .asg-cur{display:flex;align-items:center;gap:8px;min-width:0}
 .asg-chev{width:15px;height:15px;color:#9ca3af;flex-shrink:0;transition:transform .18s}
 .asg.open .asg-chev{transform:rotate(180deg)}
@@ -739,7 +740,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
             </div>
             <div class="field">
-              <label>Assign task to <span class="fin-hint">(who should pick up the dev task — optional)</span></label>
+              <label>Assign task to<span class="req">*</span> <span class="fin-hint">(who should pick up the dev task)</span></label>
               <div class="asg" id="asg-wrap">
                 <input type="hidden" id="inc-assignee" value="">
                 <button type="button" class="asg-trigger" id="asg-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleAsg(event)">
@@ -748,6 +749,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </button>
                 <div class="asg-menu" id="asg-menu" role="listbox" style="display:none"></div>
               </div>
+              <div class="prio-hint" id="inc-asg-hint"></div>
             </div>
             <div class="field">
               <label>Affected user(s) in admin <span class="fin-hint">(paste the admin.cuspwealth.com profile link — add more than one if needed)</span></label>
@@ -1685,21 +1687,20 @@ function renderAsgTrigger(){
   const id=document.getElementById('inc-assignee').value;
   const d=DEV_ASSIGNEES.find(x=>x.id===id);
   cur.innerHTML=d?`${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>`
-                 :`<span class="asg-av none">–</span><span class="asg-name asg-mut">Not assigned</span>`;
+                 :`<span class="asg-av none">–</span><span class="asg-name asg-mut">Select a developer…</span>`;
 }
 function renderAsgMenu(){
   const menu=document.getElementById('asg-menu'); if(!menu) return;
   const id=document.getElementById('inc-assignee').value;
   const check='<svg class="asg-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  const none=`<div class="asg-opt ${!id?'sel':''}" role="option" onclick="selectAsg('')"><span class="asg-av none">–</span><span class="asg-name asg-mut">Not assigned</span>${check}</div>`;
-  const opts=DEV_ASSIGNEES.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>${check}</div>`).join('');
-  menu.innerHTML=none+'<div class="asg-div"></div>'+opts;
+  menu.innerHTML=DEV_ASSIGNEES.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>${check}</div>`).join('');
 }
 function openAsg(){renderAsgMenu();document.getElementById('asg-menu').style.display='block';document.getElementById('asg-wrap').classList.add('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','true');_asgOpen=true;}
 function closeAsg(){const w=document.getElementById('asg-wrap');if(!w)return;document.getElementById('asg-menu').style.display='none';w.classList.remove('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','false');_asgOpen=false;}
 function toggleAsg(e){if(e)e.stopPropagation();_asgOpen?closeAsg():openAsg();}
-function selectAsg(id){document.getElementById('inc-assignee').value=id;renderAsgTrigger();closeAsg();}
-function resetAsg(){const h=document.getElementById('inc-assignee');if(h)h.value='';renderAsgTrigger();}
+function clearAsgError(){const w=document.getElementById('asg-wrap');if(w)w.classList.remove('err');const hint=document.getElementById('inc-asg-hint');if(hint)hint.textContent='';}
+function selectAsg(id){document.getElementById('inc-assignee').value=id;renderAsgTrigger();clearAsgError();closeAsg();}
+function resetAsg(){const h=document.getElementById('inc-assignee');if(h)h.value='';renderAsgTrigger();clearAsgError();}
 document.addEventListener('click',e=>{const w=document.getElementById('asg-wrap');if(_asgOpen&&w&&!w.contains(e.target))closeAsg();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_asgOpen)closeAsg();});
 renderAsgTrigger();
@@ -1730,9 +1731,15 @@ async function handleSubmit(e){
     g.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
+  const assigneeId=document.getElementById('inc-assignee')?.value||'';
+  if(!_editIncidentId && !assigneeId){ // required only on create — editing doesn't recreate the task
+    const w=document.getElementById('asg-wrap'), h=document.getElementById('inc-asg-hint');
+    w.classList.add('err'); h.textContent='Please choose who the task goes to'; h.style.color='#dc2626';
+    w.scrollIntoView({block:'center',behavior:'smooth'});
+    return;
+  }
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const assigneeId=document.getElementById('inc-assignee')?.value||'';
     const assigneeSlackId=(DEV_ASSIGNEES.find(d=>d.id===assigneeId)||{}).slack||'';
     const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers,assigneeId,assigneeSlackId};
     if(_editIncidentId){
