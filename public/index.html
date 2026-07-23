@@ -817,7 +817,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- CREATE TASK -->
     <div id="page-task" class="page">
-      <div class="ph"><h2>Create Task</h2><p>New tasks land in the <strong>New</strong> column on the <a href="https://app.notion.com/p/102bba654d624b6bbd995720f8b245ba" target="_blank" style="color:#E07532">Notion board</a>.</p></div>
+      <div class="ph"><h2>Create Task</h2><p>New tasks land in the <strong>New</strong> column on the <a href="https://www.notion.so/c7d16b74d75147c98ae3dda805c0c892?v=36dc450e0ce24d1489bcf8e9ae6f3e4e" target="_blank" style="color:#E07532">Notion board</a>.</p></div>
       <div class="two-col">
         <div class="card">
           <form id="task-form" onsubmit="createTask(event)">
@@ -2068,7 +2068,7 @@ async function createTask(e){
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Unknown error');
     document.getElementById('task-form').style.display='none';
-    document.getElementById('task-notion-link').href=d.url||'https://app.notion.com/p/102bba654d624b6bbd995720f8b245ba';
+    document.getElementById('task-notion-link').href=d.url||'https://www.notion.so/c7d16b74d75147c98ae3dda805c0c892?v=36dc450e0ce24d1489bcf8e9ae6f3e4e';
     document.getElementById('task-success').style.display='block';
   }catch(err){
     document.getElementById('task-form').style.display='none';
