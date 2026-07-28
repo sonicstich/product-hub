@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
     const s = getSession(req);
-    res.status(200).json(await createTask(req.body, { submittedBy: s && (s.name || s.email) }));
+    res.status(200).json(await createTask(req.body, { submittedBy: s && (s.name || s.email), creatorSlackId: s && s.sub }));
   } catch (err) {
     res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message });
   }
