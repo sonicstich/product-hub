@@ -385,6 +385,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .inc-title{font-size:15px;font-weight:700;color:#141210;line-height:1.35}
 .inc-desc{font-size:13px;color:#6b7280;line-height:1.5;margin-top:6px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.inc-desc.expanded{-webkit-line-clamp:unset;overflow:visible;white-space:pre-wrap}
+.inc-desc-toggle{margin-top:5px;background:none;border:none;padding:0;color:#E07532;font-size:12px;font-weight:700;cursor:pointer}
+.inc-desc-toggle:hover{text-decoration:underline}
 .inc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .inc-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#f3f4f6;color:#4b5563}
 .inc-tag.inc-plat{background:#fff;border:1px solid #d1d5db;color:#374151}
@@ -1846,7 +1849,7 @@ function renderIncidents(){
       <div class="inc-top">
         <div style="flex:1;min-width:0">
           <div class="inc-title">${escHtml(i.title)}</div>
-          ${i.description?`<div class="inc-desc">${escHtml(i.description)}</div>`:''}
+          ${i.description?`<div class="inc-desc">${escHtml(i.description)}</div>${(i.description.length>140||i.description.indexOf('\n')>=0)?`<button type="button" class="inc-desc-toggle" onclick="toggleDesc(this)">Show more</button>`:''}`:''}
           <div class="inc-kv">
             <div><div class="inc-kv-label">Priority</div><div class="inc-kv-val ${escHtml(i.priority)}">${escHtml(i.priority)}</div></div>
             ${platsText?`<div><div class="inc-kv-label">Platform</div><div class="inc-kv-val">${platsText}</div></div>`:''}
@@ -1866,6 +1869,11 @@ function renderIncidents(){
       </div>
     </div>`;
   }).join('');
+}
+function toggleDesc(btn){
+  const d=btn.previousElementSibling;
+  const expanded=d.classList.toggle('expanded');
+  btn.textContent=expanded?'Show less':'Show more';
 }
 
 // ── EDIT INCIDENT ─────────────────────────────────────────────────────
