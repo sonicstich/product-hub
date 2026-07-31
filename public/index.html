@@ -462,6 +462,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .doc-nav-link span{overflow:hidden;text-overflow:ellipsis}
 .doc-nav-link:hover{background:rgba(255,255,255,.07);color:#fff}
 .doc-nav-link svg{flex-shrink:0}
+.doc-article{color:#374151;font-size:14px;line-height:1.65}
+.doc-article h3{font-size:15px;font-weight:700;color:#141210;margin:24px 0 8px}
+.doc-article h3:first-child{margin-top:0}
+.doc-article p{margin:9px 0}
+.doc-article ul{margin:8px 0;padding-left:20px}
+.doc-article li{margin:5px 0}
+.doc-article code{background:#f3f4f6;border:1px solid #e7e5e0;border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#b45309}
+.doc-article a{color:#E07532;text-decoration:none;font-weight:600}
+.doc-article a:hover{text-decoration:underline}
+.doc-callout{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.6;color:#92400e}
 .doc-nav-empty{padding:5px 10px 6px 32px;font-size:11.5px;color:rgba(255,255,255,.3);font-style:italic}
 .collapsed .doc-tree{display:none}
 </style>
@@ -1069,6 +1079,57 @@ My question: </pre>
       </div>
     </div>
 
+    <div id="page-doc-adminpanel" class="page">
+      <div class="ph"><h2>Admin panel — account status, email &amp; phone</h2><p>Recent Admin Panel changes: roles &amp; access, the new account-status field, and the account-closure pipeline.</p></div>
+      <div class="card" style="max-width:840px">
+        <div class="doc-article">
+          <p>A number of related changes shipped to the Admin Panel. <a href="https://artesia-solutions.slack.com/docs/T077FRM1LJZ/F0BGRCSBML3" target="_blank">Original post &amp; screenshots in Slack ↗</a></p>
+
+          <h3>1. Access</h3>
+          <p>The Admin Panel now has two roles — <b>User</b> and <b>Admin</b>. By default everyone has the <b>User</b> role.</p>
+          <p><b>Admin</b> role: Ahmed Mekawy, Hazem El Azab, Princess Edilyn, Ahmed Elmahzouz, Harinder Singh.</p>
+          <p>Only <b>Admin</b> can change account status, change a user's email, or change a user's phone number.</p>
+
+          <h3>2. What's new on the user page</h3>
+          <ul>
+            <li><b>Account Status</b> — the INFO tab now has an account-status field (<code>applicant</code>, <code>active</code>, <code>restricted</code>, <code>dormant</code>, <code>closed</code> — see below). Changed via the <b>Change Account Status</b> button, with a required reason saved alongside the change.</li>
+            <li><b>Change Email</b> / <b>Change Phone</b> — update a user's email and phone number.</li>
+            <li><b>Status History</b> — a new tab with the full change history: timestamp, previous → new status, who changed it (admin name or “Automatic”), and reason.</li>
+          </ul>
+
+          <h3>3. Account statuses</h3>
+          <ul>
+            <li><code>applicant</code> — KYC not completed, no trading.</li>
+            <li><code>active</code> — fully onboarded, all features available.</li>
+            <li><code>restricted</code> — trading / deposits / withdrawals blocked (same as an EDD hold).</li>
+            <li><code>dormant</code> — zero equity + no financial activity for 12+ months.</li>
+            <li><code>closed</code> — account terminated: closed in Alpaca, removed from Customer.io, login disabled.</li>
+          </ul>
+
+          <h3>4. Transitions between statuses</h3>
+          <ul>
+            <li><code>applicant</code> → auto: <code>active</code> (on KYC activation), <code>dormant</code> (zero equity + 12 months). Manual (Admin + reason): <code>closed</code>, <code>restricted</code>.</li>
+            <li><code>active</code> → auto: <code>restricted</code> (KYC expired or EDD flag), <code>dormant</code> (zero equity + 12 months). Manual: <code>closed</code>, <code>restricted</code>. Cannot go back to <code>applicant</code>.</li>
+            <li><code>restricted</code> → no automatic exits. Manual: <code>active</code> (only if the EDD flag is cleared), <code>closed</code>. Cannot go to <code>applicant</code> or <code>dormant</code>.</li>
+            <li><code>dormant</code> → auto: <code>active</code> (if activity resumes). Manual: <code>closed</code>, <code>restricted</code>. Cannot go to <code>applicant</code>.</li>
+            <li><code>closed</code> → terminal: no transitions out, automatic or manual.</li>
+          </ul>
+
+          <h3>5. Account closure — under the hood</h3>
+          <p><b>Trigger:</b> Support sets status to <code>closed</code> via <b>Change Account Status</b> (reason required). This single action runs the full closure pipeline below — it's not just a status flag.</p>
+          <p><b>Guard:</b> the request is rejected (<code>400</code>) if the account has open positions or a non-zero balance — those must be cleared first.</p>
+          <p>On a successful closure:</p>
+          <ul>
+            <li><b>Alpaca</b> — a close-account request is sent and the Alpaca status is set to <code>Closed</code>. The email is overwritten with a <code>+1</code> alias (<code>user@mail.com</code> → <code>user+1@mail.com</code>), since Alpaca can't clear the email field.</li>
+            <li><b>Our database</b> — email &amp; phone are overwritten with a <code>closed+{user_id}</code> placeholder (not deleted). Trade history &amp; the suitability questionnaire are kept for the 6-year regulatory retention period, but are not accessible to the user.</li>
+            <li><b>Customer.io</b> — phone number is removed; email is switched to the <code>+1</code> alias (or archived). This lets Marketing identify closed-account emails for possible reactivation outreach.</li>
+          </ul>
+          <p><b>Re-signup:</b> the real phone/email no longer point to an active record, so signing up again with the same details is treated as a brand-new user — full flow from scratch (phone → SMS OTP → email → full KYC → new account). Old settings, trade history and questionnaire answers are <b>not</b> carried over.</p>
+          <p><code>closed</code> is terminal — a closed account can't be reopened, and there's no time-based tracking of closed accounts.</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1426,7 +1487,7 @@ async function saveReleaseEdit(key,num){
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI documentation search'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI documentation search','doc-adminpanel':'Admin panel'};
 const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',docsearch:'nav-docsearch'};
 function go(id,el){
   // Editing an incident relocates the shared form into Open Incidents. If the
@@ -2185,6 +2246,9 @@ const DOC_SECTIONS=[
   {key:'promo',      label:'Promo Codes & Bonuses', docs:[
     {title:'Refer a Friend', url:'https://www.notion.so/Refer-Friends-b3ab9d31878a4b9db3c897effda31ec4'},
   ]},
+  {key:'adminpanel', label:'Admin panel', docs:[
+    {title:'Account status, email & phone', page:'doc-adminpanel'},
+  ]},
 ];
 let _docsOpen=new Set();
 
@@ -2199,7 +2263,7 @@ function renderDocsNav(){
   tree.innerHTML=DOC_SECTIONS.map(s=>{
     const open=_docsOpen.has(s.key);
     const body=s.docs.length
-      ? s.docs.map(d=>`<a class="doc-nav-link" href="${escHtml(d.url)}" target="_blank">
+      ? s.docs.map(d=>`<a class="doc-nav-link" href="${d.page?'#'+escHtml(d.page):escHtml(d.url)}"${d.page?'':' target="_blank"'}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <span>${escHtml(d.title)}</span>
         </a>`).join('')
