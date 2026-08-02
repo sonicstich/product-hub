@@ -376,6 +376,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inc-fchip.on{background:#141210;border-color:#141210;color:#fff}
 .fchip-n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:rgba(107,114,128,.14);color:#6b7280;font-size:10.5px;font-weight:700;line-height:1}
 .inc-fchip.on .fchip-n{background:rgba(255,255,255,.2);color:#fff}
+.inc-viewtabs{display:inline-flex;gap:4px;background:#efece5;border-radius:11px;padding:4px;margin-bottom:18px}
+.inc-vtab{border:none;background:none;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;transition:all .15s}
+.inc-vtab.on{background:#fff;color:#141210;box-shadow:0 1px 3px rgba(20,18,16,.08)}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:#fff;border:1px solid #ece8e1;border-radius:12px;padding:15px 17px}
+.stat-card .sc-label{font-size:12px;color:#9ca3af;margin-bottom:7px}
+.stat-card .sc-val{font-size:26px;font-weight:700;color:#141210;line-height:1}
+.stat-card .sc-sub{font-size:11.5px;color:#9ca3af;margin-top:6px}
+.stat-block{background:#fff;border:1px solid #ece8e1;border-radius:12px;padding:16px 20px;margin-bottom:16px}
+.stat-block h3{font-size:14px;font-weight:700;color:#141210;margin:0 0 14px}
+.stat-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.stat-bar-row{display:grid;grid-template-columns:118px 1fr 30px;align-items:center;gap:11px;margin:9px 0;font-size:12.5px}
+.stat-bar-label{color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-bar-track{background:#f3f4f6;border-radius:6px;height:9px;overflow:hidden}
+.stat-bar-fill{height:100%;background:#E07532;border-radius:6px;min-width:2px;transition:width .3s}
+.stat-bar-val{text-align:right;font-weight:700;color:#374151}
+.stat-empty{color:#9ca3af;font-size:12.5px}
 .inc-new-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 17px;border-radius:9px;background:#E07532;color:#fff;border:none;font-size:13.5px;font-weight:700;cursor:pointer;transition:filter .15s;white-space:nowrap}
 .inc-new-btn:hover{filter:brightness(1.08)}
 .inc-list{display:flex;flex-direction:column;gap:12px}
@@ -823,6 +840,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <!-- OPEN INCIDENTS -->
     <div id="page-incidents" class="page">
+      <div class="inc-viewtabs">
+        <button class="inc-vtab on" id="vtab-list" onclick="setIncView('list')">Incidents</button>
+        <button class="inc-vtab" id="vtab-stats" onclick="setIncView('stats')">Statistics</button>
+      </div>
       <div id="inc-browse">
         <div class="inc-toolbar">
           <div class="inc-filters" id="inc-filters"></div>
@@ -833,6 +854,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div class="inc-list" id="inc-list"><div class="inc-empty">Loading…</div></div>
       </div>
+      <div id="inc-stats" style="display:none"></div>
       <div class="form-wrap" id="inc-edit-slot" style="display:none"></div>
     </div>
 
@@ -1171,6 +1193,12 @@ function toKey(d){
   return `${y}-${m}-${day}`;
 }
 function parseDate(str){const[y,m,d]=str.split('-').map(Number);return new Date(y,m-1,d);}
+// Which sprint number a given date (YYYY-MM-DD) falls into, from the anchor.
+function sprintForDate(dateStr){
+  if(!dateStr) return null;
+  const diff=Math.floor((parseDate(dateStr)-parseDate(ANCHOR_START))/(SPRINT_DAYS*86400000));
+  return ANCHOR_NUM+diff;
+}
 
 // Event priority: publish > review > submit > testing
 const PRIO = {publish:4, review:3, submit:2, testing:1};
@@ -1855,7 +1883,7 @@ function resetForm(){
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
 // Must match the backend enum in lib/store.js.
 const INC_STATUSES=['Open','In Progress','Waiting for Release','Backlog','Resolved'];
-let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false;
+let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false, _incView='list';
 
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function stClass(s){return 'st-'+s.toLowerCase().replace(/[^a-z]/g,'');}
@@ -1930,11 +1958,68 @@ function renderIncidents(){
       </div>
     </div>`;
   }).join('');
+  if(_incView==='stats') renderIncStats();
 }
 function toggleDesc(btn){
   const d=btn.previousElementSibling;
   const expanded=d.classList.toggle('expanded');
   btn.textContent=expanded?'Show less':'Show more';
+}
+
+// ── INCIDENT STATISTICS ──────────────────────────────────────────────
+function setIncView(v){
+  _incView=v;
+  document.getElementById('vtab-list').classList.toggle('on',v==='list');
+  document.getElementById('vtab-stats').classList.toggle('on',v==='stats');
+  document.getElementById('inc-browse').style.display=v==='list'?'':'none';
+  document.getElementById('inc-stats').style.display=v==='stats'?'':'none';
+  if(v==='stats') renderIncStats();
+}
+function statBar(label,val,max){
+  const pct=max>0?Math.round(val/max*100):0;
+  return `<div class="stat-bar-row"><div class="stat-bar-label">${escHtml(label)}</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${val>0?Math.max(pct,4):0}%"></div></div><div class="stat-bar-val">${val}</div></div>`;
+}
+function renderIncStats(){
+  const box=document.getElementById('inc-stats'); if(!box) return;
+  const all=_incidents;
+  const active=all.filter(i=>i.status!=='Resolved');
+  const backlog=all.filter(i=>i.status==='Backlog');
+  const resolved=all.filter(i=>i.status==='Resolved');
+  const cur=sprintForDate(todayKey);
+  const inCur=all.filter(i=>sprintForDate(i.date)===cur);
+  const curOpen=inCur.filter(i=>i.status!=='Resolved');
+  // Approx. time-to-resolve: created → last update (≈ when resolved).
+  const times=resolved.map(i=>{const c=i.createdAt&&new Date(i.createdAt),u=i.updatedAt&&new Date(i.updatedAt);return (c&&u)?(u-c)/86400000:null;}).filter(x=>x!=null&&x>=0);
+  const avgDays=times.length?(times.reduce((a,b)=>a+b,0)/times.length).toFixed(1):'—';
+  // Per sprint (current .. current-7)
+  const sc={}; all.forEach(i=>{const s=sprintForDate(i.date); if(s!=null) sc[s]=(sc[s]||0)+1;});
+  const sprintNums=[]; for(let s=cur;s>cur-8;s--) sprintNums.push(s);
+  const sMax=Math.max(1,...sprintNums.map(s=>sc[s]||0));
+  // By area
+  const ac={}; all.forEach(i=>(i.areas||[]).forEach(a=>{ac[a]=(ac[a]||0)+1;}));
+  const areas=Object.entries(ac).sort((a,b)=>b[1]-a[1]);
+  const aMax=Math.max(1,...areas.map(e=>e[1]));
+  // By status
+  const stc={}; INC_STATUSES.forEach(s=>stc[s]=all.filter(i=>i.status===s).length);
+  const stMax=Math.max(1,...Object.values(stc));
+  // By priority
+  const prio=['Critical','High','Medium','Low'];
+  const pc={}; prio.forEach(p=>pc[p]=all.filter(i=>i.priority===p).length);
+  const pMax=Math.max(1,...Object.values(pc));
+
+  box.innerHTML=`
+    <div class="stat-cards">
+      <div class="stat-card"><div class="sc-label">Active incidents</div><div class="sc-val">${active.length}</div><div class="sc-sub">of ${all.length} total</div></div>
+      <div class="stat-card"><div class="sc-label">Open in current sprint</div><div class="sc-val">${curOpen.length}</div><div class="sc-sub">Sprint ${cur} · ${inCur.length} reported</div></div>
+      <div class="stat-card"><div class="sc-label">In backlog</div><div class="sc-val">${backlog.length}</div></div>
+      <div class="stat-card"><div class="sc-label">Avg days to resolve</div><div class="sc-val">${avgDays}</div><div class="sc-sub">${resolved.length} resolved</div></div>
+    </div>
+    <div class="stat-block"><h3>Incidents per sprint</h3>${sprintNums.map(s=>statBar('Sprint '+s, sc[s]||0, sMax)).join('')}</div>
+    <div class="stat-cols">
+      <div class="stat-block"><h3>By area</h3>${areas.length?areas.map(([a,c])=>statBar(a,c,aMax)).join(''):'<div class="stat-empty">No data yet</div>'}</div>
+      <div class="stat-block"><h3>By status</h3>${INC_STATUSES.map(s=>statBar(s,stc[s],stMax)).join('')}</div>
+    </div>
+    <div class="stat-block"><h3>By priority</h3>${prio.map(p=>statBar(p,pc[p],pMax)).join('')}</div>`;
 }
 
 // ── EDIT INCIDENT ─────────────────────────────────────────────────────
