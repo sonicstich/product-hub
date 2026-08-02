@@ -392,7 +392,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-bar-track{background:#f3f4f6;border-radius:6px;height:9px;overflow:hidden}
 .stat-bar-fill{height:100%;background:#E07532;border-radius:6px;min-width:2px;transition:width .3s}
 .stat-bar-val{text-align:right;font-weight:700;color:#374151}
-.stat-empty{color:#9ca3af;font-size:12.5px}
+.stat-empty{color:#9ca3af;font-size:12.5px;line-height:1.5}
+.stat-filter{display:flex;align-items:center;gap:9px;margin-bottom:16px;font-size:13px;color:#6b7280;font-weight:600}
+.stat-filter select{font-size:13px;font-weight:600;color:#141210;border:1.5px solid #d1d5db;border-radius:8px;padding:6px 11px;background:#fff;cursor:pointer;font-family:inherit;outline:none}
+.stat-filter select:focus{border-color:#E07532}
+.stat-h-sub{font-weight:400;color:#9ca3af;font-size:12px}
 .inc-new-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 17px;border-radius:9px;background:#E07532;color:#fff;border:none;font-size:13.5px;font-weight:700;cursor:pointer;transition:filter .15s;white-space:nowrap}
 .inc-new-btn:hover{filter:brightness(1.08)}
 .inc-list{display:flex;flex-direction:column;gap:12px}
@@ -1883,7 +1887,7 @@ function resetForm(){
 // ── OPEN INCIDENTS ───────────────────────────────────────────────────
 // Must match the backend enum in lib/store.js.
 const INC_STATUSES=['Open','In Progress','Waiting for Release','Backlog','Resolved'];
-let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false, _incView='list';
+let _incidents=[], _incFilter='Active', _incidentsLoaded=false, _incidentsDirty=false, _incView='list', _incStatsSprint=null;
 
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function stClass(s){return 'st-'+s.toLowerCase().replace(/[^a-z]/g,'');}
@@ -1975,51 +1979,90 @@ function setIncView(v){
   document.getElementById('inc-stats').style.display=v==='stats'?'':'none';
   if(v==='stats') renderIncStats();
 }
-function statBar(label,val,max){
+function statBar(label,val,max,display){
   const pct=max>0?Math.round(val/max*100):0;
-  return `<div class="stat-bar-row"><div class="stat-bar-label">${escHtml(label)}</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${val>0?Math.max(pct,4):0}%"></div></div><div class="stat-bar-val">${val}</div></div>`;
+  return `<div class="stat-bar-row"><div class="stat-bar-label">${escHtml(label)}</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${val>0?Math.max(pct,4):0}%"></div></div><div class="stat-bar-val">${display!=null?display:val}</div></div>`;
 }
+function fmtDur(days){
+  if(days==null||isNaN(days)) return '—';
+  if(days>=1) return days.toFixed(days>=10?0:1)+'d';
+  const h=days*24; if(h>=1) return Math.round(h)+'h';
+  return Math.max(1,Math.round(days*1440))+'m';
+}
+// Days an incident took to resolve, from its status history (created → first
+// Resolved). Falls back to created→last-update for older incidents lacking history.
+function resolveDaysOf(i){
+  const h=i.statusHistory||[];
+  const start=h.length?new Date(h[0].at):(i.createdAt?new Date(i.createdAt):null);
+  const r=h.find(e=>e.status==='Resolved');
+  if(start&&r) return (new Date(r.at)-start)/86400000;
+  if(i.status==='Resolved'&&i.createdAt&&i.updatedAt) return (new Date(i.updatedAt)-new Date(i.createdAt))/86400000;
+  return null;
+}
+function setStatsSprint(v){ _incStatsSprint=(v==='all'?'all':Number(v)); renderIncStats(); }
 function renderIncStats(){
   const box=document.getElementById('inc-stats'); if(!box) return;
   const all=_incidents;
-  const active=all.filter(i=>i.status!=='Resolved');
-  const backlog=all.filter(i=>i.status==='Backlog');
-  const resolved=all.filter(i=>i.status==='Resolved');
   const cur=sprintForDate(todayKey);
-  const inCur=all.filter(i=>sprintForDate(i.date)===cur);
-  const curOpen=inCur.filter(i=>i.status!=='Resolved');
-  // Approx. time-to-resolve: created → last update (≈ when resolved).
-  const times=resolved.map(i=>{const c=i.createdAt&&new Date(i.createdAt),u=i.updatedAt&&new Date(i.updatedAt);return (c&&u)?(u-c)/86400000:null;}).filter(x=>x!=null&&x>=0);
-  const avgDays=times.length?(times.reduce((a,b)=>a+b,0)/times.length).toFixed(1):'—';
-  // Per sprint (current .. current-7)
+  if(_incStatsSprint==null) _incStatsSprint=cur;
+  const sel=_incStatsSprint;
+  const scoped=sel==='all'?all:all.filter(i=>sprintForDate(i.date)===sel);
+  const scopeLabel=sel==='all'?'all sprints':('Sprint '+sel);
+
+  const active=scoped.filter(i=>i.status!=='Resolved');
+  const backlog=scoped.filter(i=>i.status==='Backlog');
+  const resolved=scoped.filter(i=>i.status==='Resolved');
+  const rdays=scoped.map(resolveDaysOf).filter(x=>x!=null&&x>=0);
+  const avgResolve=rdays.length?rdays.reduce((a,b)=>a+b,0)/rdays.length:null;
+
+  // Cross-sprint overview (not affected by the filter).
   const sc={}; all.forEach(i=>{const s=sprintForDate(i.date); if(s!=null) sc[s]=(sc[s]||0)+1;});
   const sprintNums=[]; for(let s=cur;s>cur-8;s--) sprintNums.push(s);
   const sMax=Math.max(1,...sprintNums.map(s=>sc[s]||0));
-  // By area
-  const ac={}; all.forEach(i=>(i.areas||[]).forEach(a=>{ac[a]=(ac[a]||0)+1;}));
+
+  // Average time spent in each status (scoped), from the status history.
+  const dur={}, cnt={};
+  scoped.forEach(i=>{
+    const h=i.statusHistory||[];
+    for(let k=0;k<h.length;k++){
+      const end=k<h.length-1?new Date(h[k+1].at):(h[k].status!=='Resolved'?new Date():null);
+      if(end==null) continue;
+      const d=(end-new Date(h[k].at))/86400000;
+      if(d<0) continue;
+      dur[h[k].status]=(dur[h[k].status]||0)+d; cnt[h[k].status]=(cnt[h[k].status]||0)+1;
+    }
+  });
+  const avgIn={}; INC_STATUSES.forEach(s=>{ if(cnt[s]) avgIn[s]=dur[s]/cnt[s]; });
+  const inMax=Math.max(0.01,...Object.values(avgIn));
+
+  const ac={}; scoped.forEach(i=>(i.areas||[]).forEach(a=>{ac[a]=(ac[a]||0)+1;}));
   const areas=Object.entries(ac).sort((a,b)=>b[1]-a[1]);
   const aMax=Math.max(1,...areas.map(e=>e[1]));
-  // By status
-  const stc={}; INC_STATUSES.forEach(s=>stc[s]=all.filter(i=>i.status===s).length);
+  const stc={}; INC_STATUSES.forEach(s=>stc[s]=scoped.filter(i=>i.status===s).length);
   const stMax=Math.max(1,...Object.values(stc));
-  // By priority
   const prio=['Critical','High','Medium','Low'];
-  const pc={}; prio.forEach(p=>pc[p]=all.filter(i=>i.priority===p).length);
+  const pc={}; prio.forEach(p=>pc[p]=scoped.filter(i=>i.priority===p).length);
   const pMax=Math.max(1,...Object.values(pc));
 
+  const opts=[...sprintNums.map(s=>`<option value="${s}" ${sel===s?'selected':''}>Sprint ${s}${s===cur?' (current)':''}</option>`),`<option value="all" ${sel==='all'?'selected':''}>All sprints</option>`].join('');
+  const inRows=INC_STATUSES.filter(s=>avgIn[s]!=null).map(s=>statBar(s,avgIn[s],inMax,fmtDur(avgIn[s])));
+
   box.innerHTML=`
+    <div class="stat-filter"><span>Sprint</span><select onchange="setStatsSprint(this.value)">${opts}</select></div>
     <div class="stat-cards">
-      <div class="stat-card"><div class="sc-label">Active incidents</div><div class="sc-val">${active.length}</div><div class="sc-sub">of ${all.length} total</div></div>
-      <div class="stat-card"><div class="sc-label">Open in current sprint</div><div class="sc-val">${curOpen.length}</div><div class="sc-sub">Sprint ${cur} · ${inCur.length} reported</div></div>
+      <div class="stat-card"><div class="sc-label">Reported</div><div class="sc-val">${scoped.length}</div><div class="sc-sub">${scopeLabel}</div></div>
+      <div class="stat-card"><div class="sc-label">Active</div><div class="sc-val">${active.length}</div><div class="sc-sub">unresolved</div></div>
       <div class="stat-card"><div class="sc-label">In backlog</div><div class="sc-val">${backlog.length}</div></div>
-      <div class="stat-card"><div class="sc-label">Avg days to resolve</div><div class="sc-val">${avgDays}</div><div class="sc-sub">${resolved.length} resolved</div></div>
+      <div class="stat-card"><div class="sc-label">Resolved</div><div class="sc-val">${resolved.length}</div></div>
+      <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>
     </div>
-    <div class="stat-block"><h3>Incidents per sprint</h3>${sprintNums.map(s=>statBar('Sprint '+s, sc[s]||0, sMax)).join('')}</div>
+    <div class="stat-block"><h3>Incidents per sprint <span class="stat-h-sub">— all sprints</span></h3>${sprintNums.map(s=>statBar('Sprint '+s+(s===cur?' •':''), sc[s]||0, sMax)).join('')}</div>
+    <div class="stat-block"><h3>Avg time in status <span class="stat-h-sub">— ${scopeLabel}</span></h3>${inRows.length?inRows.join(''):'<div class="stat-empty">No status changes recorded yet — this fills in as incidents move between statuses.</div>'}</div>
     <div class="stat-cols">
-      <div class="stat-block"><h3>By area</h3>${areas.length?areas.map(([a,c])=>statBar(a,c,aMax)).join(''):'<div class="stat-empty">No data yet</div>'}</div>
-      <div class="stat-block"><h3>By status</h3>${INC_STATUSES.map(s=>statBar(s,stc[s],stMax)).join('')}</div>
+      <div class="stat-block"><h3>By area <span class="stat-h-sub">— ${scopeLabel}</span></h3>${areas.length?areas.map(([a,c])=>statBar(a,c,aMax)).join(''):'<div class="stat-empty">No data</div>'}</div>
+      <div class="stat-block"><h3>By status <span class="stat-h-sub">— ${scopeLabel}</span></h3>${INC_STATUSES.map(s=>statBar(s,stc[s],stMax)).join('')}</div>
     </div>
-    <div class="stat-block"><h3>By priority</h3>${prio.map(p=>statBar(p,pc[p],pMax)).join('')}</div>`;
+    <div class="stat-block"><h3>By priority <span class="stat-h-sub">— ${scopeLabel}</span></h3>${prio.map(p=>statBar(p,pc[p],pMax)).join('')}</div>`;
 }
 
 // ── EDIT INCIDENT ─────────────────────────────────────────────────────
