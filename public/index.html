@@ -393,7 +393,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-bar-fill{height:100%;background:#E07532;border-radius:6px;min-width:2px;transition:width .3s}
 .stat-bar-val{text-align:right;font-weight:700;color:#374151}
 .stat-empty{color:#9ca3af;font-size:12.5px;line-height:1.5}
-.stat-filter{display:flex;align-items:center;gap:9px;margin-bottom:16px;font-size:13px;color:#6b7280;font-weight:600}
+.stat-filter{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;color:#6b7280;font-weight:600}
+.stat-note{font-weight:400;color:#9ca3af;font-size:11.5px}
 .stat-filter select{font-size:13px;font-weight:600;color:#141210;border:1.5px solid #d1d5db;border-radius:8px;padding:6px 11px;background:#fff;cursor:pointer;font-family:inherit;outline:none}
 .stat-filter select:focus{border-color:#E07532}
 .stat-h-sub{font-weight:400;color:#9ca3af;font-size:12px}
@@ -1989,15 +1990,21 @@ function fmtDur(days){
   const h=days*24; if(h>=1) return Math.round(h)+'h';
   return Math.max(1,Math.round(days*1440))+'m';
 }
-// Days an incident took to resolve, from its status history (created → first
-// Resolved). Falls back to created→last-update for older incidents lacking history.
+function sprintStartDate(n){ return addDays(parseDate(ANCHOR_START),(n-ANCHOR_NUM)*SPRINT_DAYS); }
+// When an incident was resolved: first Resolved in history, else last update if
+// it's Resolved, else null (still open).
+function resolvedAtOf(i){
+  const r=(i.statusHistory||[]).find(e=>e.status==='Resolved');
+  if(r) return new Date(r.at);
+  if(i.status==='Resolved'&&i.updatedAt) return new Date(i.updatedAt);
+  return null;
+}
+// Days from open to resolve, from the status history (created → first Resolved).
 function resolveDaysOf(i){
   const h=i.statusHistory||[];
   const start=h.length?new Date(h[0].at):(i.createdAt?new Date(i.createdAt):null);
-  const r=h.find(e=>e.status==='Resolved');
-  if(start&&r) return (new Date(r.at)-start)/86400000;
-  if(i.status==='Resolved'&&i.createdAt&&i.updatedAt) return (new Date(i.updatedAt)-new Date(i.createdAt))/86400000;
-  return null;
+  const r=resolvedAtOf(i);
+  return (start&&r)?(r-start)/86400000:null;
 }
 function setStatsSprint(v){ _incStatsSprint=(v==='all'?'all':Number(v)); renderIncStats(); }
 function renderIncStats(){
@@ -2006,12 +2013,23 @@ function renderIncStats(){
   const cur=sprintForDate(todayKey);
   if(_incStatsSprint==null) _incStatsSprint=cur;
   const sel=_incStatsSprint;
-  const scoped=sel==='all'?all:all.filter(i=>sprintForDate(i.date)===sel);
-  const scopeLabel=sel==='all'?'all sprints':('Sprint '+sel);
-
-  const active=scoped.filter(i=>i.status!=='Resolved');
+  const isAll=sel==='all';
+  const scopeLabel=isAll?'all sprints':('Sprint '+sel);
+  // Scope = incidents ACTIVE during the sprint: reported by its end and not
+  // already resolved before it started — this includes carry-overs (opened in an
+  // earlier sprint, still active, e.g. sitting in backlog).
+  let scoped, newList=[], carriedList=[], resolvedInSprint=[];
+  if(isAll){ scoped=all; }
+  else {
+    const startD=sprintStartDate(sel), endD=addDays(startD,SPRINT_SPAN), nextD=addDays(startD,SPRINT_DAYS);
+    scoped=all.filter(i=>{ if(parseDate(i.date)>endD) return false; const rr=resolvedAtOf(i); return !(rr&&rr<startD); });
+    newList=scoped.filter(i=>parseDate(i.date)>=startD);
+    carriedList=scoped.filter(i=>parseDate(i.date)<startD);
+    resolvedInSprint=scoped.filter(i=>{const rr=resolvedAtOf(i); return rr&&rr>=startD&&rr<nextD;});
+  }
+  const stillOpen=scoped.filter(i=>i.status!=='Resolved');
   const backlog=scoped.filter(i=>i.status==='Backlog');
-  const resolved=scoped.filter(i=>i.status==='Resolved');
+  const resolvedAll=scoped.filter(i=>i.status==='Resolved');
   const rdays=scoped.map(resolveDaysOf).filter(x=>x!=null&&x>=0);
   const avgResolve=rdays.length?rdays.reduce((a,b)=>a+b,0)/rdays.length:null;
 
@@ -2047,15 +2065,20 @@ function renderIncStats(){
   const opts=[...sprintNums.map(s=>`<option value="${s}" ${sel===s?'selected':''}>Sprint ${s}${s===cur?' (current)':''}</option>`),`<option value="all" ${sel==='all'?'selected':''}>All sprints</option>`].join('');
   const inRows=INC_STATUSES.filter(s=>avgIn[s]!=null).map(s=>statBar(s,avgIn[s],inMax,fmtDur(avgIn[s])));
 
+  const cards = isAll
+    ? `<div class="stat-card"><div class="sc-label">Reported</div><div class="sc-val">${all.length}</div><div class="sc-sub">all sprints</div></div>
+       <div class="stat-card"><div class="sc-label">Active</div><div class="sc-val">${stillOpen.length}</div><div class="sc-sub">unresolved</div></div>
+       <div class="stat-card"><div class="sc-label">In backlog</div><div class="sc-val">${backlog.length}</div></div>
+       <div class="stat-card"><div class="sc-label">Resolved</div><div class="sc-val">${resolvedAll.length}</div></div>
+       <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>`
+    : `<div class="stat-card"><div class="sc-label">New this sprint</div><div class="sc-val">${newList.length}</div><div class="sc-sub">reported in ${scopeLabel}</div></div>
+       <div class="stat-card"><div class="sc-label">Carried over</div><div class="sc-val">${carriedList.length}</div><div class="sc-sub">open, from earlier</div></div>
+       <div class="stat-card"><div class="sc-label">Still open</div><div class="sc-val">${stillOpen.length}</div><div class="sc-sub">of ${scoped.length} in sprint</div></div>
+       <div class="stat-card"><div class="sc-label">Resolved this sprint</div><div class="sc-val">${resolvedInSprint.length}</div></div>
+       <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>`;
   box.innerHTML=`
-    <div class="stat-filter"><span>Sprint</span><select onchange="setStatsSprint(this.value)">${opts}</select></div>
-    <div class="stat-cards">
-      <div class="stat-card"><div class="sc-label">Reported</div><div class="sc-val">${scoped.length}</div><div class="sc-sub">${scopeLabel}</div></div>
-      <div class="stat-card"><div class="sc-label">Active</div><div class="sc-val">${active.length}</div><div class="sc-sub">unresolved</div></div>
-      <div class="stat-card"><div class="sc-label">In backlog</div><div class="sc-val">${backlog.length}</div></div>
-      <div class="stat-card"><div class="sc-label">Resolved</div><div class="sc-val">${resolved.length}</div></div>
-      <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>
-    </div>
+    <div class="stat-filter"><span>Sprint</span><select onchange="setStatsSprint(this.value)">${opts}</select>${isAll?'':`<span class="stat-note">Includes carry-overs from earlier sprints still active in ${scopeLabel}.</span>`}</div>
+    <div class="stat-cards">${cards}</div>
     <div class="stat-block"><h3>Incidents per sprint <span class="stat-h-sub">— all sprints</span></h3>${sprintNums.map(s=>statBar('Sprint '+s+(s===cur?' •':''), sc[s]||0, sMax)).join('')}</div>
     <div class="stat-block"><h3>Avg time in status <span class="stat-h-sub">— ${scopeLabel}</span></h3>${inRows.length?inRows.join(''):'<div class="stat-empty">No status changes recorded yet — this fills in as incidents move between statuses.</div>'}</div>
     <div class="stat-cols">
