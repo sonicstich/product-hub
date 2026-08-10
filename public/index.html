@@ -2012,12 +2012,18 @@ function resolvedAtOf(i){
   if(i.status==='Resolved'&&i.updatedAt) return new Date(i.updatedAt);
   return null;
 }
-// Days from open to resolve, from the status history (created → first Resolved).
-function resolveDaysOf(i){
-  const h=i.statusHistory||[];
-  const start=h.length?new Date(h[0].at):(i.createdAt?new Date(i.createdAt):null);
-  const r=resolvedAtOf(i);
-  return (start&&r)?(r-start)/86400000:null;
+// Total days a task spent in the "In Progress" status, from its history (sums
+// all In Progress segments; counts an ongoing one up to now). null if it never
+// entered In Progress — so tickets without tracked progress simply don't count.
+function inProgressDaysOf(i){
+  const h=i.statusHistory||[]; let sum=0, seen=false;
+  for(let k=0;k<h.length;k++){
+    if(h[k].status!=='In Progress') continue;
+    seen=true;
+    const end=k<h.length-1?new Date(h[k+1].at):new Date();
+    const d=(end-new Date(h[k].at))/86400000; if(d>0) sum+=d;
+  }
+  return seen?sum:null;
 }
 function setStatsSprint(v){ _incStatsSprint=(v==='all'?'all':Number(v)); renderIncStats(); }
 function toggleSprintDD(e){ if(e)e.stopPropagation(); const m=document.getElementById('spdd-menu'); if(!m) return; const open=m.style.display!=='none'; m.style.display=open?'none':'block'; document.getElementById('spdd').classList.toggle('open',!open); }
@@ -2045,8 +2051,8 @@ function renderIncStats(){
   const stillOpen=scoped.filter(i=>i.status!=='Resolved');
   const backlog=scoped.filter(i=>i.status==='Backlog');
   const resolvedAll=scoped.filter(i=>i.status==='Resolved');
-  const rdays=scoped.map(resolveDaysOf).filter(x=>x!=null&&x>=0);
-  const avgResolve=rdays.length?rdays.reduce((a,b)=>a+b,0)/rdays.length:null;
+  const ipDays=scoped.map(inProgressDaysOf).filter(x=>x!=null);
+  const avgIP=ipDays.length?ipDays.reduce((a,b)=>a+b,0)/ipDays.length:null;
 
   // Cross-sprint overview (not affected by the filter).
   const sc={}; all.forEach(i=>{const s=sprintForDate(i.date); if(s!=null) sc[s]=(sc[s]||0)+1;});
@@ -2087,12 +2093,12 @@ function renderIncStats(){
        <div class="stat-card"><div class="sc-label">Active</div><div class="sc-val">${stillOpen.length}</div><div class="sc-sub">unresolved</div></div>
        <div class="stat-card"><div class="sc-label">In backlog</div><div class="sc-val">${backlog.length}</div></div>
        <div class="stat-card"><div class="sc-label">Resolved</div><div class="sc-val">${resolvedAll.length}</div></div>
-       <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>`
+       <div class="stat-card"><div class="sc-label">Avg time in progress</div><div class="sc-val">${avgIP!=null?fmtDur(avgIP):'—'}</div><div class="sc-sub">${ipDays.length} tracked</div></div>`
     : `<div class="stat-card"><div class="sc-label">New this sprint</div><div class="sc-val">${newList.length}</div><div class="sc-sub">reported in ${scopeLabel}</div></div>
        <div class="stat-card"><div class="sc-label">Carried over</div><div class="sc-val">${carriedList.length}</div><div class="sc-sub">open, from earlier</div></div>
        <div class="stat-card"><div class="sc-label">Still open</div><div class="sc-val">${stillOpen.length}</div><div class="sc-sub">of ${scoped.length} in sprint</div></div>
        <div class="stat-card"><div class="sc-label">Resolved this sprint</div><div class="sc-val">${resolvedInSprint.length}</div></div>
-       <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>`;
+       <div class="stat-card"><div class="sc-label">Avg time in progress</div><div class="sc-val">${avgIP!=null?fmtDur(avgIP):'—'}</div><div class="sc-sub">${ipDays.length} tracked</div></div>`;
   box.innerHTML=`
     <div class="spdd" id="spdd"><button type="button" class="spdd-trigger" onclick="toggleSprintDD(event)" aria-haspopup="listbox"><span>${ddLabel}</span><svg class="spdd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="spdd-menu" id="spdd-menu" style="display:none">${ddMenu}</div></div>
     ${isAll?'':`<div class="stat-note-row">Includes carry-overs from earlier sprints still active in ${scopeLabel}.</div>`}
