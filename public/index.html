@@ -393,6 +393,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-bar-fill{height:100%;background:#E07532;border-radius:6px;min-width:2px;transition:width .3s}
 .stat-bar-val{text-align:right;font-weight:700;color:#374151}
 .stat-empty{color:#9ca3af;font-size:12.5px;line-height:1.5}
+.spdd{position:relative;display:inline-block;min-width:215px;margin-bottom:12px}
+.spdd-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 13px;border:1.5px solid #d1d5db;border-radius:9px;background:#fff;cursor:pointer;font-size:13.5px;font-weight:600;color:#141210;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+.spdd-trigger:hover{border-color:#b3b8bf}
+.spdd.open .spdd-trigger{border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.spdd-chev{width:15px;height:15px;color:#9ca3af;flex-shrink:0;transition:transform .18s}
+.spdd.open .spdd-chev{transform:rotate(180deg)}
+.spdd-menu{position:absolute;top:calc(100% + 5px);left:0;min-width:100%;z-index:300;background:#fff;border:1.5px solid #e8e5e0;border-radius:11px;padding:5px;box-shadow:0 14px 36px rgba(20,18,16,.13),0 2px 8px rgba(20,18,16,.05);animation:dpIn .13s ease;max-height:320px;overflow-y:auto}
+.spdd-opt{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;transition:background .12s}
+.spdd-opt:hover{background:#FDF6EE}
+.spdd-opt.sel{background:rgba(224,117,50,.1);color:#141210}
+.spdd-check{margin-left:auto;color:#E07532;width:15px;height:15px;flex-shrink:0;opacity:0}
+.spdd-opt.sel .spdd-check{opacity:1}
+.stat-note-row{font-size:11.5px;color:#9ca3af;margin:0 0 18px}
 .stat-filter{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;color:#6b7280;font-weight:600}
 .stat-note{font-weight:400;color:#9ca3af;font-size:11.5px}
 .stat-filter select{font-size:13px;font-weight:600;color:#141210;border:1.5px solid #d1d5db;border-radius:8px;padding:6px 11px;background:#fff;cursor:pointer;font-family:inherit;outline:none}
@@ -2007,6 +2020,8 @@ function resolveDaysOf(i){
   return (start&&r)?(r-start)/86400000:null;
 }
 function setStatsSprint(v){ _incStatsSprint=(v==='all'?'all':Number(v)); renderIncStats(); }
+function toggleSprintDD(e){ if(e)e.stopPropagation(); const m=document.getElementById('spdd-menu'); if(!m) return; const open=m.style.display!=='none'; m.style.display=open?'none':'block'; document.getElementById('spdd').classList.toggle('open',!open); }
+document.addEventListener('click',e=>{ const w=document.getElementById('spdd'), m=document.getElementById('spdd-menu'); if(m&&m.style.display!=='none'&&w&&!w.contains(e.target)){ m.style.display='none'; w.classList.remove('open'); } });
 function renderIncStats(){
   const box=document.getElementById('inc-stats'); if(!box) return;
   const all=_incidents;
@@ -2062,7 +2077,9 @@ function renderIncStats(){
   const pc={}; prio.forEach(p=>pc[p]=scoped.filter(i=>i.priority===p).length);
   const pMax=Math.max(1,...Object.values(pc));
 
-  const opts=[...sprintNums.map(s=>`<option value="${s}" ${sel===s?'selected':''}>Sprint ${s}${s===cur?' (current)':''}</option>`),`<option value="all" ${sel==='all'?'selected':''}>All sprints</option>`].join('');
+  const ddCheck='<svg class="spdd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const ddMenu=[...sprintNums.map(s=>`<div class="spdd-opt ${sel===s?'sel':''}" onclick="setStatsSprint(${s})">Sprint ${s}${s===cur?' · current':''}${ddCheck}</div>`),`<div class="spdd-opt ${sel==='all'?'sel':''}" onclick="setStatsSprint('all')">All sprints${ddCheck}</div>`].join('');
+  const ddLabel=sel==='all'?'All sprints':('Sprint '+sel+(sel===cur?' · current':''));
   const inRows=INC_STATUSES.filter(s=>avgIn[s]!=null).map(s=>statBar(s,avgIn[s],inMax,fmtDur(avgIn[s])));
 
   const cards = isAll
@@ -2077,7 +2094,8 @@ function renderIncStats(){
        <div class="stat-card"><div class="sc-label">Resolved this sprint</div><div class="sc-val">${resolvedInSprint.length}</div></div>
        <div class="stat-card"><div class="sc-label">Avg time to resolve</div><div class="sc-val">${avgResolve!=null?fmtDur(avgResolve):'—'}</div><div class="sc-sub">${rdays.length} resolved</div></div>`;
   box.innerHTML=`
-    <div class="stat-filter"><span>Sprint</span><select onchange="setStatsSprint(this.value)">${opts}</select>${isAll?'':`<span class="stat-note">Includes carry-overs from earlier sprints still active in ${scopeLabel}.</span>`}</div>
+    <div class="spdd" id="spdd"><button type="button" class="spdd-trigger" onclick="toggleSprintDD(event)" aria-haspopup="listbox"><span>${ddLabel}</span><svg class="spdd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="spdd-menu" id="spdd-menu" style="display:none">${ddMenu}</div></div>
+    ${isAll?'':`<div class="stat-note-row">Includes carry-overs from earlier sprints still active in ${scopeLabel}.</div>`}
     <div class="stat-cards">${cards}</div>
     <div class="stat-block"><h3>Incidents per sprint <span class="stat-h-sub">— all sprints</span></h3>${sprintNums.map(s=>statBar('Sprint '+s+(s===cur?' •':''), sc[s]||0, sMax)).join('')}</div>
     <div class="stat-block"><h3>Avg time in status <span class="stat-h-sub">— ${scopeLabel}</span></h3>${inRows.length?inRows.join(''):'<div class="stat-empty">No status changes recorded yet — this fills in as incidents move between statuses.</div>'}</div>
