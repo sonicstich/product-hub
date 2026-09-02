@@ -1558,7 +1558,9 @@ function go(id,el){
 // bookmarked link) restores it instead of always dropping back to Home.
 function goFromHash(){ const id=location.hash.slice(1); go(TITLES[id]?id:'home'); }
 window.addEventListener('hashchange',goFromHash);
-goFromHash();
+// Initial goFromHash() runs at the very end of the script (see bottom), after
+// all state (let _editIncidentId, _incidentsLoaded, …) is declared — otherwise
+// a fresh load directly on #incident/#incidents throws a TDZ error.
 
 // ── CUSTOM DATE PICKER ──────────────────────────────────────────────
 const _DP={};
@@ -1793,25 +1795,32 @@ const DEV_ASSIGNEES=[
   {name:'Ilia Pogudin',     id:'4764cc4f-7c10-4b9b-8e48-61e479c25e34', slack:'U077Y95J82E'},
   {name:'Svilen Strahilov', id:'3a0d872b-594c-8147-949d-0002623048ab', slack:'U0BJ1783LCS'},
 ];
+// Full option list for the "Assign task to" dropdown: Nobody + Me + the devs.
+// "Nobody" (id 'none') means no assignee at all — the backend adds no one.
+const ASG_OPTIONS=[
+  {name:'Nobody', id:'none', slack:'none', none:true},
+  {name:'Emil Mubarakov', id:'299d872b-594c-8131-bef4-0002816b3e50', slack:'U09NZ2BDSAY'},
+  ...DEV_ASSIGNEES,
+];
 // Custom dropdown: colored initials avatar + styled menu, backed by a hidden
 // input (#inc-assignee) so the submit path is unchanged.
 const ASG_COLORS=['#E07532','#2563eb','#059669','#7c3aed','#db2777','#0891b2','#d97706','#4f46e5'];
 function asgColor(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0;return ASG_COLORS[h%ASG_COLORS.length];}
 function asgInitials(name){const p=(name||'').trim().split(/\s+/);return(((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
-function asgAvatar(d){return d?`<span class="asg-av" style="background:${asgColor(d.name)}">${escHtml(asgInitials(d.name))}</span>`:'<span class="asg-av none">–</span>';}
+function asgAvatar(d){return (d&&!d.none)?`<span class="asg-av" style="background:${asgColor(d.name)}">${escHtml(d.initials||asgInitials(d.name))}</span>`:'<span class="asg-av none">–</span>';}
 let _asgOpen=false;
 function renderAsgTrigger(){
   const cur=document.getElementById('asg-cur'); if(!cur) return;
   const id=document.getElementById('inc-assignee').value;
-  const d=DEV_ASSIGNEES.find(x=>x.id===id);
-  cur.innerHTML=d?`${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>`
-                 :`<span class="asg-av none">–</span><span class="asg-name asg-mut">Select a developer…</span>`;
+  const d=ASG_OPTIONS.find(x=>x.id===id);
+  cur.innerHTML=d?`${asgAvatar(d)}<span class="asg-name${d.none?' asg-mut':''}">${escHtml(d.name)}</span>`
+                 :`<span class="asg-av none">–</span><span class="asg-name asg-mut">Select…</span>`;
 }
 function renderAsgMenu(){
   const menu=document.getElementById('asg-menu'); if(!menu) return;
   const id=document.getElementById('inc-assignee').value;
   const check='<svg class="asg-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  menu.innerHTML=DEV_ASSIGNEES.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name">${escHtml(d.name)}</span>${check}</div>`).join('');
+  menu.innerHTML=ASG_OPTIONS.map(d=>`<div class="asg-opt ${id===d.id?'sel':''}" role="option" onclick="selectAsg('${d.id}')">${asgAvatar(d)}<span class="asg-name${d.none?' asg-mut':''}">${escHtml(d.name)}</span>${check}</div>`).join('');
 }
 function openAsg(){renderAsgMenu();document.getElementById('asg-menu').style.display='block';document.getElementById('asg-wrap').classList.add('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','true');_asgOpen=true;}
 function closeAsg(){const w=document.getElementById('asg-wrap');if(!w)return;document.getElementById('asg-menu').style.display='none';w.classList.remove('open');document.getElementById('asg-trigger').setAttribute('aria-expanded','false');_asgOpen=false;}
@@ -1858,7 +1867,7 @@ async function handleSubmit(e){
   }
   btn.disabled=true; const t0=btn.textContent; btn.textContent=_editIncidentId?'Saving…':'Submitting…';
   try{
-    const assigneeSlackId=(DEV_ASSIGNEES.find(d=>d.id===assigneeId)||{}).slack||'';
+    const assigneeSlackId=(ASG_OPTIONS.find(d=>d.id===assigneeId)||{}).slack||'';
     const payload={title,description,priority,affected,date,areas,platforms,images,tasks:_incTasks,financeSupport,userLinks:_incUsers,assigneeId,assigneeSlackId};
     if(_editIncidentId){
       const r=await fetch('/api/incidents',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_editIncidentId,...payload})});
@@ -2454,6 +2463,8 @@ function renderDocsNav(){
   }).join('');
 }
 renderDocsNav();
+// Route to the initial page now that every top-level declaration exists.
+goFromHash();
 </script>
 </body>
 </html>
