@@ -25,6 +25,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .login-slack-btn{display:inline-flex;align-items:center;gap:11px;background:#fff;color:#1a1a1a;font-size:15px;font-weight:600;padding:13px 24px;border-radius:11px;text-decoration:none;transition:transform .12s,box-shadow .18s}
 .login-slack-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .login-foot{margin-top:22px;font-size:12px;color:rgba(255,255,255,.3)}
+/* Email sign-in (external @oworkers.com contractors) */
+.login-or{display:flex;align-items:center;gap:12px;margin:22px auto 18px;color:rgba(255,255,255,.28);font-size:11.5px;font-weight:600;letter-spacing:.5px}
+.login-or::before,.login-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.1)}
+.login-email{text-align:left}
+.login-email label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);margin:0 0 6px}
+.login-email input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 13px;font-size:14px;color:#fff;font-family:inherit;transition:border-color .15s,background .15s;margin-bottom:13px}
+.login-email input::placeholder{color:rgba(255,255,255,.28)}
+.login-email input:focus{outline:none;border-color:#E07532;background:rgba(255,255,255,.09)}
+.login-email-btn{width:100%;background:linear-gradient(135deg,#E07532,#C8641C);color:#fff;font-size:14.5px;font-weight:600;padding:12px;border:none;border-radius:10px;cursor:pointer;font-family:inherit;transition:transform .12s,box-shadow .18s;margin-top:2px}
+.login-email-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(224,117,50,.35)}
+.login-email-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+.login-email-note{font-size:11.5px;color:rgba(255,255,255,.32);line-height:1.5;margin-top:12px;text-align:center}
+.login-email-err{font-size:12.5px;color:#f9a8a8;margin-top:12px;text-align:center;min-height:0}
 
 .sb-nav{flex:1;padding:12px 8px;overflow-y:auto;overflow-x:hidden}
 .sb-nav::-webkit-scrollbar{width:6px}
@@ -524,7 +537,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <svg width="18" height="18" viewBox="0 0 122.8 122.8" aria-hidden="true"><path d="M25.8 77.6a12.9 12.9 0 1 1-12.9-12.9h12.9z" fill="#E01E5A"/><path d="M32.3 77.6a12.9 12.9 0 0 1 25.8 0v32.3a12.9 12.9 0 0 1-25.8 0z" fill="#E01E5A"/><path d="M45.2 25.8a12.9 12.9 0 1 1 12.9-12.9v12.9z" fill="#36C5F0"/><path d="M45.2 32.3a12.9 12.9 0 0 1 0 25.8H12.9a12.9 12.9 0 0 1 0-25.8z" fill="#36C5F0"/><path d="M97 45.2a12.9 12.9 0 1 1 12.9 12.9H97z" fill="#2EB67D"/><path d="M90.5 45.2a12.9 12.9 0 0 1-25.8 0V12.9a12.9 12.9 0 0 1 25.8 0z" fill="#2EB67D"/><path d="M77.6 97a12.9 12.9 0 1 1-12.9 12.9V97z" fill="#ECB22E"/><path d="M77.6 90.5a12.9 12.9 0 0 1 0-25.8h32.3a12.9 12.9 0 0 1 0 25.8z" fill="#ECB22E"/></svg>
       Sign in with Slack
     </a>
-    <div class="login-foot">Restricted to the CUSP Slack workspace</div>
+    <div class="login-or">OR</div>
+    <form class="login-email" id="login-email-form" onsubmit="emailLogin(event)">
+      <label for="le-email">Email</label>
+      <input id="le-email" type="email" autocomplete="username" placeholder="name@oworkers.com" required>
+      <label for="le-pass">Password</label>
+      <input id="le-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      <button type="submit" class="login-email-btn" id="le-btn">Sign in</button>
+      <div class="login-email-err" id="le-err"></div>
+      <div class="login-email-note">For external contractors only — use the email ending in <b style="color:rgba(255,255,255,.5)">@oworkers.com</b> that was shared with you.</div>
+    </form>
+    <div class="login-foot">Slack sign-in is restricted to the CUSP workspace</div>
   </div>
 </div>
 
@@ -1536,6 +1559,8 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('co
 const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI documentation search','doc-adminpanel':'Admin panel'};
 const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',docsearch:'nav-docsearch'};
 function go(id,el){
+  // Restricted reporters can only ever see Report Incident — pin them there.
+  if(window.__isReporter && id!=='incident'){ id='incident'; el=null; }
   // Editing an incident relocates the shared form into Open Incidents. If the
   // user jumps straight to "Report Incident" instead of using Cancel/Save,
   // treat it as discarding that edit so the form isn't left stranded there.
@@ -2242,6 +2267,8 @@ fetch('/api/auth/me').then(r=>r.json()).then(d=>{
   // Gate on: if sign-in is required and we're not signed in, show the landing page.
   if(d && d.authEnabled && !d.authenticated){ document.getElementById('login-screen').style.display='flex'; return; }
   if(!d||!d.authenticated||!d.user) return;
+  // External "reporter" accounts (@oworkers.com contractors) only get Report Incident.
+  if(d.role==='reporter') applyReporterRole();
   const box=document.getElementById('sb-account'); if(!box) return;
   const name=(d.user.name||d.user.email||'User').trim();
   const av=document.getElementById('sb-acc-avatar');
@@ -2250,6 +2277,36 @@ fetch('/api/auth/me').then(r=>r.json()).then(d=>{
   document.getElementById('sb-acc-name').textContent=name;
   box.style.display='flex';
 }).catch(()=>{});
+
+// Email + password sign-in for external reporters.
+async function emailLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('le-btn'), err=document.getElementById('le-err');
+  const email=document.getElementById('le-email').value.trim();
+  const password=document.getElementById('le-pass').value;
+  err.textContent=''; btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const r=await fetch('/api/auth/email-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    if(r.ok){ location.reload(); return; }
+    const d=await r.json().catch(()=>({}));
+    err.textContent=d.error||'Invalid email or password.';
+  }catch(_){ err.textContent='Something went wrong — please try again.'; }
+  btn.disabled=false; btn.textContent='Sign in';
+}
+
+// Lock the UI down to Report Incident for restricted "reporter" accounts.
+function applyReporterRole(){
+  window.__isReporter=true;
+  document.body.classList.add('role-reporter');
+  // Hide every nav item except Report Incident, plus empty section labels.
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id!=='nav-incident') n.style.display='none'; });
+  document.querySelectorAll('.nav-section').forEach(sec=>{
+    if(!sec.querySelector('.nav-item:not([style*="display: none"])')) sec.style.display='none';
+  });
+  // Force the incident page and neutralise the hash router for other routes.
+  location.hash='#incident';
+  go('incident');
+}
 
 // ── CREATE TASK ──────────────────────────────────────────────────────
 (function initTaskForm(){

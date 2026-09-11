@@ -4,11 +4,16 @@ const { getSession, denyUnauth } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   if (denyUnauth(req, res)) return;
+  // Limited "reporter" accounts (external contractors) may ONLY create incidents.
+  const s = getSession(req);
+  if (s && s.role === 'reporter' && req.method !== 'POST') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     if (req.method === 'GET')  return res.status(200).json(await listIncidents());
     if (req.method === 'POST') {
-      const s = getSession(req);
-      return res.status(201).json(await createIncident(req.body || {}, { reporterId: s && s.sub, reporterName: s && (s.name || s.email) }));
+      const rid = s && s.sub;
+      return res.status(201).json(await createIncident(req.body || {}, { reporterId: rid && !String(rid).startsWith('email:') ? rid : null, reporterName: s && (s.name || s.email) }));
     }
     if (req.method === 'PATCH') {
       const { id, ...patch } = req.body || {};

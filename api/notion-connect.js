@@ -2,8 +2,11 @@
 // The redirect URI is derived from the incoming request host, so it works on
 // any deployment domain (must be registered on the Notion connection too).
 const notion = require('../lib/notion');
+const { denyUnauth, denyRestricted } = require('../lib/auth');
 
 module.exports = (req, res) => {
+  if (denyUnauth(req, res)) return;
+  if (denyRestricted(req, res)) return;
   if (!notion.oauthConfigured()) {
     res.status(500).send('NOTION_OAUTH_CLIENT_ID / NOTION_OAUTH_CLIENT_SECRET are not set in this environment.');
     return;

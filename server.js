@@ -34,6 +34,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth') || req.path === '/status') return next();
   if (authLib.denyUnauth(req, res)) return;
+  // Limited "reporter" accounts (external @oworkers.com contractors) may ONLY
+  // submit an incident. Everything else is 403 — the UI hides it too.
+  const s = authLib.getSession(req);
+  if (s && s.role === 'reporter' && !(req.method === 'POST' && req.path === '/incidents')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   next();
 });
 
@@ -84,7 +90,7 @@ app.get('/api/releases',  wrap(() => store.listReleases()));
 app.post('/api/releases', async (req, res) => { try { res.json(await store.saveRelease(req.body || {})); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 
 app.get('/api/incidents',    wrap(req => store.listIncidents()));
-app.post('/api/incidents',   async (req, res) => { try { const s = authLib.getSession(req); res.status(201).json(await store.createIncident(req.body || {}, { reporterId: s && s.sub, reporterName: s && (s.name || s.email) })); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
+app.post('/api/incidents',   async (req, res) => { try { const s = authLib.getSession(req); const rid = s && s.sub; res.status(201).json(await store.createIncident(req.body || {}, { reporterId: rid && !String(rid).startsWith('email:') ? rid : null, reporterName: s && (s.name || s.email) })); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 app.patch('/api/incidents',  wrap(req => { const { id, ...p } = req.body || {}; return store.updateIncident(id, p); }));
 app.delete('/api/incidents', wrap(req => store.deleteIncident((req.body && req.body.id) || req.query.id)));
 
@@ -110,11 +116,19 @@ app.get('/api/auth/callback', async (req, res) => {
     res.redirect('/');
   } catch (e) { res.status(500).send('Sign-in error: ' + e.message); }
 });
+app.post('/api/auth/email-login', (req, res) => {
+  const body = req.body || {};
+  const user = authLib.verifyEmailUser(body.email, body.password);
+  if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+  const jwt = authLib.signSession({ sub: 'email:' + user.email, name: user.name, email: user.email, role: 'reporter' });
+  res.setHeader('Set-Cookie', authLib.sessionSetCookie(jwt));
+  res.json({ ok: true });
+});
 app.get('/api/auth/me', (req, res) => {
   if (!authLib.authConfigured()) return res.json({ authEnabled: false, authenticated: false });
   const s = authLib.getSession(req);
   if (!s) return res.status(401).json({ authEnabled: true, authenticated: false });
-  res.json({ authEnabled: true, authenticated: true, user: { id: s.sub, name: s.name, email: s.email, picture: s.pic } });
+  res.json({ authEnabled: true, authenticated: true, role: s.role || 'member', user: { id: s.sub, name: s.name, email: s.email, picture: s.pic } });
 });
 app.get('/api/auth/logout', (req, res) => { res.setHeader('Set-Cookie', authLib.sessionClearCookie()); res.redirect('/'); });
 

@@ -45,11 +45,26 @@ module.exports = async (req, res) => {
     }
   }
 
+  // Email + password sign-in for external reporters (@oworkers.com contractors).
+  // These accounts get role:'reporter' — the frontend hides everything but
+  // "Report Incident" and the API rejects them everywhere else (denyRestricted).
+  if (action === 'email-login') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
+    body = body || {};
+    const user = auth.verifyEmailUser(body.email, body.password);
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    const jwt = auth.signSession({ sub: 'email:' + user.email, name: user.name, email: user.email, role: 'reporter' });
+    res.setHeader('Set-Cookie', auth.sessionSetCookie(jwt));
+    return res.status(200).json({ ok: true });
+  }
+
   if (action === 'me') {
     if (!auth.authConfigured()) return res.status(200).json({ authEnabled: false, authenticated: false });
     const s = auth.getSession(req);
     if (!s) return res.status(401).json({ authEnabled: true, authenticated: false });
-    return res.status(200).json({ authEnabled: true, authenticated: true, user: { id: s.sub, name: s.name, email: s.email, picture: s.pic } });
+    return res.status(200).json({ authEnabled: true, authenticated: true, role: s.role || 'member', user: { id: s.sub, name: s.name, email: s.email, picture: s.pic } });
   }
 
   if (action === 'logout') {
