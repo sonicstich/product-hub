@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Product Hub</title>
+<script>
+// Remember a restricted "reporter" login so we can hide the non-reporter tabs
+// BEFORE first paint (no flash). Reconciled against /api/auth/me on load.
+try {
+  if (localStorage.getItem('ph_role') === 'reporter') {
+    document.documentElement.classList.add('reporter-boot');
+    var _h = location.hash.slice(1);
+    if (_h !== 'incident' && _h !== 'incidents') location.hash = '#incident';
+  }
+} catch (e) {}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F1EB;color:#111827;display:flex;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -65,6 +76,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb-acc-logout{color:rgba(255,255,255,.4);flex-shrink:0;display:flex;transition:color .15s}
 .sb-acc-logout:hover{color:rgba(255,255,255,.9)}
 .collapsed .sb-account{display:none!important}
+/* Restricted reporter view — hide every tab except Report Incident + Open
+   Incidents. Driven by a class set in the <head> boot script (from a
+   remembered login) so it applies before first paint, then reconciled by
+   /api/auth/me. Non-reporters never get the class. */
+html.reporter-boot .nav-section{display:none}
+html.reporter-boot .nav-section.ops-section{display:block}
+html.reporter-boot .ops-section .nav-section-label{display:none}
+html.reporter-boot .ops-section .nav-item{display:none}
+html.reporter-boot #nav-incident,
+html.reporter-boot #nav-incidents{display:flex}
 
 /* ── MAIN ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
@@ -573,7 +594,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="nav-label">Release Calendar</span>
       </div>
     </div>
-    <div class="nav-section">
+    <div class="nav-section ops-section">
       <div class="nav-section-label">Operations</div>
       <div class="nav-item" id="nav-task" onclick="go('task',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -634,7 +655,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sb-account" id="sb-account" style="display:none">
       <div class="sb-acc-avatar" id="sb-acc-avatar"></div>
       <div class="sb-acc-name" id="sb-acc-name"></div>
-      <a class="sb-acc-logout" href="/api/auth/logout" title="Sign out">
+      <a class="sb-acc-logout" href="/api/auth/logout" title="Sign out" onclick="try{localStorage.removeItem('ph_role')}catch(e){}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
@@ -2266,11 +2287,14 @@ loadIncidents(); // populate the sidebar badge on first load
 
 // Show the signed-in Slack user in the sidebar footer (only when auth is on).
 fetch('/api/auth/me').then(r=>r.json()).then(d=>{
+  // Drop any remembered reporter-boot state (and its class) when this session
+  // is NOT a reporter — prevents a stale flag from hiding a full user's tabs.
+  const clearReporter=()=>{ try{localStorage.removeItem('ph_role');}catch(_){}; document.documentElement.classList.remove('reporter-boot'); };
   // Gate on: if sign-in is required and we're not signed in, show the landing page.
-  if(d && d.authEnabled && !d.authenticated){ document.getElementById('login-screen').style.display='flex'; return; }
-  if(!d||!d.authenticated||!d.user) return;
-  // External "reporter" accounts (@oworkers.com contractors) only get Report Incident.
-  if(d.role==='reporter') applyReporterRole();
+  if(d && d.authEnabled && !d.authenticated){ clearReporter(); document.getElementById('login-screen').style.display='flex'; return; }
+  if(!d||!d.authenticated||!d.user){ clearReporter(); return; }
+  // External "reporter" accounts (@oworkers.com contractors) only get Report Incident + Open Incidents.
+  if(d.role==='reporter') applyReporterRole(); else clearReporter();
   const box=document.getElementById('sb-account'); if(!box) return;
   const name=(d.user.name||d.user.email||'User').trim();
   const av=document.getElementById('sb-acc-avatar');
@@ -2289,7 +2313,7 @@ async function emailLogin(e){
   err.textContent=''; btn.disabled=true; btn.textContent='Signing in…';
   try{
     const r=await fetch('/api/auth/email-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-    if(r.ok){ location.reload(); return; }
+    if(r.ok){ try{localStorage.setItem('ph_role','reporter');}catch(_){}; location.reload(); return; }
     const d=await r.json().catch(()=>({}));
     err.textContent=d.error||'Invalid email or password.';
   }catch(_){ err.textContent='Something went wrong — please try again.'; }
@@ -2297,16 +2321,14 @@ async function emailLogin(e){
 }
 
 // Restricted "reporter" accounts can only Report Incident and VIEW Open Incidents.
-const REPORTER_NAV=['nav-incident','nav-incidents'];       // nav items they keep
 const REPORTER_PAGES=['incident','incidents'];             // routes they may open
 function applyReporterRole(){
   window.__isReporter=true;
+  // Nav-hiding is done in CSS via these classes (see html.reporter-boot rules),
+  // set here AND by the <head> boot script so the tabs never flash in.
+  document.documentElement.classList.add('reporter-boot');
   document.body.classList.add('role-reporter');
-  // Hide every nav item except the ones reporters are allowed, plus empty sections.
-  document.querySelectorAll('.nav-item').forEach(n=>{ if(!REPORTER_NAV.includes(n.id)) n.style.display='none'; });
-  document.querySelectorAll('.nav-section').forEach(sec=>{
-    if(!sec.querySelector('.nav-item:not([style*="display: none"])')) sec.style.display='none';
-  });
+  try{ localStorage.setItem('ph_role','reporter'); }catch(_){}
   // Land on the report form; if they arrived on an allowed route, keep it.
   const cur=location.hash.slice(1);
   const start=REPORTER_PAGES.includes(cur)?cur:'incident';
