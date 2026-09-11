@@ -1559,8 +1559,8 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('co
 const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI documentation search','doc-adminpanel':'Admin panel'};
 const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',docsearch:'nav-docsearch'};
 function go(id,el){
-  // Restricted reporters can only ever see Report Incident — pin them there.
-  if(window.__isReporter && id!=='incident'){ id='incident'; el=null; }
+  // Restricted reporters can only see Report Incident + Open Incidents — pin them there.
+  if(window.__isReporter && !REPORTER_PAGES.includes(id)){ id='incident'; el=null; }
   // Editing an incident relocates the shared form into Open Incidents. If the
   // user jumps straight to "Report Incident" instead of using Cancel/Save,
   // treat it as discarding that edit so the form isn't left stranded there.
@@ -2003,9 +2003,11 @@ function renderIncidents(){
           ${tasks}
         </div>
         <div class="inc-actions">
-          <select class="inc-status ${stClass(i.status)}" onchange="changeStatus('${i.id}',this.value)">${opts}</select>
+          ${window.__isReporter
+            ? `<select class="inc-status ${stClass(i.status)}" disabled><option>${escHtml(i.status)}</option></select>`
+            : `<select class="inc-status ${stClass(i.status)}" onchange="changeStatus('${i.id}',this.value)">${opts}</select>
           <button class="inc-edit-btn" title="Edit" onclick="startEdit('${i.id}')">✎</button>
-          <button class="inc-del" title="Delete" onclick="removeIncident('${i.id}')">✕</button>
+          <button class="inc-del" title="Delete" onclick="removeIncident('${i.id}')">✕</button>`}
         </div>
       </div>
     </div>`;
@@ -2294,18 +2296,22 @@ async function emailLogin(e){
   btn.disabled=false; btn.textContent='Sign in';
 }
 
-// Lock the UI down to Report Incident for restricted "reporter" accounts.
+// Restricted "reporter" accounts can only Report Incident and VIEW Open Incidents.
+const REPORTER_NAV=['nav-incident','nav-incidents'];       // nav items they keep
+const REPORTER_PAGES=['incident','incidents'];             // routes they may open
 function applyReporterRole(){
   window.__isReporter=true;
   document.body.classList.add('role-reporter');
-  // Hide every nav item except Report Incident, plus empty section labels.
-  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id!=='nav-incident') n.style.display='none'; });
+  // Hide every nav item except the ones reporters are allowed, plus empty sections.
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(!REPORTER_NAV.includes(n.id)) n.style.display='none'; });
   document.querySelectorAll('.nav-section').forEach(sec=>{
     if(!sec.querySelector('.nav-item:not([style*="display: none"])')) sec.style.display='none';
   });
-  // Force the incident page and neutralise the hash router for other routes.
-  location.hash='#incident';
-  go('incident');
+  // Land on the report form; if they arrived on an allowed route, keep it.
+  const cur=location.hash.slice(1);
+  const start=REPORTER_PAGES.includes(cur)?cur:'incident';
+  location.hash='#'+start;
+  go(start);
 }
 
 // ── CREATE TASK ──────────────────────────────────────────────────────

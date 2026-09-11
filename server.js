@@ -34,10 +34,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth') || req.path === '/status') return next();
   if (authLib.denyUnauth(req, res)) return;
-  // Limited "reporter" accounts (external @oworkers.com contractors) may ONLY
-  // submit an incident. Everything else is 403 — the UI hides it too.
+  // Limited "reporter" accounts (external @oworkers.com contractors) may only
+  // view + submit incidents (GET/POST /incidents). Editing, status changes and
+  // deletes (PATCH/DELETE) and every other endpoint are 403 — the UI hides them.
   const s = authLib.getSession(req);
-  if (s && s.role === 'reporter' && !(req.method === 'POST' && req.path === '/incidents')) {
+  if (s && s.role === 'reporter' &&
+      !(req.path === '/incidents' && (req.method === 'GET' || req.method === 'POST'))) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   next();

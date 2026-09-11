@@ -4,9 +4,10 @@ const { getSession, denyUnauth } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   if (denyUnauth(req, res)) return;
-  // Limited "reporter" accounts (external contractors) may ONLY create incidents.
+  // Limited "reporter" accounts (external contractors) may view + create
+  // incidents (GET/POST) but not edit, change status, or delete (PATCH/DELETE).
   const s = getSession(req);
-  if (s && s.role === 'reporter' && req.method !== 'POST') {
+  if (s && s.role === 'reporter' && req.method !== 'GET' && req.method !== 'POST') {
     return res.status(403).json({ error: 'Forbidden' });
   }
   try {
