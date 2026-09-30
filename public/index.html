@@ -612,14 +612,18 @@ html.reporter-boot #nav-incidents{display:flex}
 .br-dl-title{font-size:15px;font-weight:700;color:#141210}
 .br-dl-sub{font-size:12.5px;color:#6b7280;margin-top:4px;line-height:1.5;max-width:660px}
 .br-dl-body{margin-top:16px}
-.br-dl-scroll{overflow-x:auto;border:1px solid #f0eeeb;border-radius:10px}
-.br-dl-tbl{border-collapse:collapse;font-size:12px;min-width:100%}
-.br-dl-tbl th,.br-dl-tbl td{border:1px solid #f0eeeb;padding:7px 10px;text-align:center;white-space:nowrap}
-.br-dl-tbl thead th{background:#faf8f5;color:#6b7280;font-weight:700;font-size:10.5px;letter-spacing:.3px}
-.br-dl-tbl tbody th{text-align:left;background:#fff;color:#374151;font-weight:600;position:sticky;left:0;box-shadow:1px 0 0 #f0eeeb}
+.br-dl-scroll{border:1px solid #f0eeeb;border-radius:10px;overflow:hidden}
+.br-dl-tbl{border-collapse:collapse;width:100%;table-layout:fixed}
+.br-dl-tbl th,.br-dl-tbl td{border:1px solid #f0eeeb;padding:6px 4px;text-align:center;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere}
+.br-dl-tbl thead th{background:#faf8f5;color:#6b7280;font-weight:700;font-size:9px;letter-spacing:.1px;line-height:1.2}
+.br-dl-tbl tbody th{text-align:left;background:#fff;color:#374151;font-weight:600;font-size:10.5px;line-height:1.25}
+.br-dl-tbl th:first-child{width:19%}
+.br-dl-tbl thead th:first-child{background:#f3efe9;text-align:left;color:#374151;font-size:9.5px}
+.br-dl-tbl td{font-size:12px}
 .br-dl-tbl td.yes{background:#f0fdf4;color:#16a34a;font-weight:700}
 .br-dl-tbl td.no{color:#d8dbe0}
-.br-dl-tbl thead th:first-child{position:sticky;left:0;z-index:2;background:#f3efe9;text-align:left;color:#374151}
+.br-dl-tbl tr.br-dl-always th,.br-dl-tbl tr.br-dl-always td{border-top:2px solid #e2ddd4}
+.br-dl-tbl tr.br-dl-always th{background:#fffbeb;color:#b45309}
 .br-dl-notes{margin-top:16px;display:grid;gap:8px}
 .br-dl-note{font-size:12.5px;line-height:1.5;color:#4b5563}
 .br-dl-note b{color:#141210}
@@ -2870,6 +2874,7 @@ const BR_DL_MATRIX=[
   ['REWARDS',[1,0,1,0,0,0,0,0,0]],
   ['SELECT_BONUS_STOCK',[1,0,0,0,0,1,0,0,0]],
   ['FINANCE_ADVISOR_CONTACT',[0,1,1,0,0,0,0,1,1]],
+  ['No destination (Show OFF / external link)',[1,1,1,1,1,1,1,1,1],true],
 ];
 const BR_DL_NOTES=[
   ['Rule',"Applies when the banner's Show button is ON with an in-app destination. If the placement can't open that destination, the app silently hides the banner (no error)."],
@@ -2881,8 +2886,9 @@ const BR_DL_NOTES=[
 ];
 function renderDlMatrix(){
   const t=document.getElementById('br-dl-table'); if(!t) return;
-  const head='<tr><th>Destination \\ Placement</th>'+BR_DL_PLACEMENTS.map(p=>`<th>${p}</th>`).join('')+'</tr>';
-  const body=BR_DL_MATRIX.map(([dest,cells])=>`<tr><th>${dest}</th>`+cells.map(c=>c?'<td class="yes">✓</td>':'<td class="no">–</td>').join('')+'</tr>').join('');
+  const wbr=s=>s.replace(/_/g,'_<wbr>');
+  const head='<tr><th>Destination</th>'+BR_DL_PLACEMENTS.map(p=>`<th>${wbr(p)}</th>`).join('')+'</tr>';
+  const body=BR_DL_MATRIX.map(([dest,cells,special])=>`<tr${special?' class="br-dl-always"':''}><th>${wbr(dest)}</th>`+cells.map(c=>c?'<td class="yes">✓</td>':'<td class="no">–</td>').join('')+'</tr>').join('');
   t.innerHTML=`<table class="br-dl-tbl"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   const n=document.getElementById('br-dl-notes'); if(n)n.innerHTML=BR_DL_NOTES.map(([k,v])=>`<div class="br-dl-note"><b>${k}:</b> ${v}</div>`).join('');
 }
