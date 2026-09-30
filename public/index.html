@@ -606,6 +606,24 @@ html.reporter-boot #nav-incidents{display:flex}
 .br-explain .br-muted{color:#9ca3af}
 .br-cant{margin-top:16px;font-size:12.5px;color:#6b7280;line-height:1.55;background:#faf8f5;border:1px solid #f0eeeb;border-radius:8px;padding:11px 13px}
 .br-cant b{color:#374151}
+/* Deeplink destinations matrix */
+.br-dl{margin-top:20px}
+.br-dl-head{display:flex;align-items:flex-start;gap:12px}
+.br-dl-title{font-size:15px;font-weight:700;color:#141210}
+.br-dl-sub{font-size:12.5px;color:#6b7280;margin-top:4px;line-height:1.5;max-width:660px}
+.br-dl-body{margin-top:16px}
+.br-dl-scroll{overflow-x:auto;border:1px solid #f0eeeb;border-radius:10px}
+.br-dl-tbl{border-collapse:collapse;font-size:12px;min-width:100%}
+.br-dl-tbl th,.br-dl-tbl td{border:1px solid #f0eeeb;padding:7px 10px;text-align:center;white-space:nowrap}
+.br-dl-tbl thead th{background:#faf8f5;color:#6b7280;font-weight:700;font-size:10.5px;letter-spacing:.3px}
+.br-dl-tbl tbody th{text-align:left;background:#fff;color:#374151;font-weight:600;position:sticky;left:0;box-shadow:1px 0 0 #f0eeeb}
+.br-dl-tbl td.yes{background:#f0fdf4;color:#16a34a;font-weight:700}
+.br-dl-tbl td.no{color:#d8dbe0}
+.br-dl-tbl thead th:first-child{position:sticky;left:0;z-index:2;background:#f3efe9;text-align:left;color:#374151}
+.br-dl-notes{margin-top:16px;display:grid;gap:8px}
+.br-dl-note{font-size:12.5px;line-height:1.5;color:#4b5563}
+.br-dl-note b{color:#141210}
+.br-dl-src{margin-top:14px;font-size:11.5px;color:#9ca3af;line-height:1.5}
 </style>
 </head>
 <body>
@@ -1238,25 +1256,45 @@ My question: </pre>
         <h2>Banner rules</h2>
         <p>Build a banner's audience rule without code. Pick the conditions you need — a valid JSON assembles itself. In the admin panel set <b>Audience type = rules</b> and paste this JSON into the Rules field.</p>
       </div>
-      <div class="br-optnote"><b>All fields are optional.</b> Add only the conditions you care about — anything you leave on <b>“Any”</b> (or leave blank) is ignored, not set to false.</div>
-      <div class="br-presets" id="br-presets"></div>
-      <div class="br-wrap">
-        <div class="card br-builder">
-          <div id="br-controls"></div>
-        </div>
-        <div class="card br-output">
-          <div class="br-out-head">
-            <span>Rule JSON</span>
-            <div class="br-out-actions">
-              <button type="button" class="br-btn br-btn-primary" id="br-copy" onclick="copyBannerJson(this)">Copy</button>
+      <div class="inc-viewtabs">
+        <button class="inc-vtab on" id="bvtab-builder" onclick="setBannerView('builder')">Rule builder</button>
+        <button class="inc-vtab" id="bvtab-deeplinks" onclick="setBannerView('deeplinks')">Deeplink matrix</button>
+      </div>
+      <div id="bview-builder">
+        <div class="br-optnote"><b>All fields are optional.</b> Add only the conditions you care about — anything you leave on <b>“Any”</b> (or leave blank) is ignored, not set to false.</div>
+        <div class="br-presets" id="br-presets"></div>
+        <div class="br-wrap">
+          <div class="card br-builder">
+            <div id="br-controls"></div>
+          </div>
+          <div class="card br-output">
+            <div class="br-out-head">
+              <span>Rule JSON</span>
+              <div class="br-out-actions">
+                <button type="button" class="br-btn br-btn-primary" id="br-copy" onclick="copyBannerJson(this)">Copy</button>
+              </div>
+            </div>
+            <pre id="br-json" class="br-json"></pre>
+            <div id="br-warnings" class="br-warns"></div>
+            <div class="br-expl-head">What this rule does</div>
+            <div id="br-explain" class="br-explain"></div>
+            <div class="br-cant">
+              <b>What can't be built</b> (the banner engine doesn't support it): deposit amount (“more than $100”), deposit count (only “has deposited / hasn't”), <b>deposited_is_null</b>, referral state <b>INVITER_FRIEND_JOINED</b>, “OR” between conditions (every condition must hold together), any field not in the menu. If a condition isn't in the menu, it can't be done.
             </div>
           </div>
-          <pre id="br-json" class="br-json"></pre>
-          <div id="br-warnings" class="br-warns"></div>
-          <div class="br-expl-head">What this rule does</div>
-          <div id="br-explain" class="br-explain"></div>
-          <div class="br-cant">
-            <b>What can't be built</b> (the banner engine doesn't support it): deposit amount (“more than $100”), deposit count (only “has deposited / hasn't”), <b>deposited_is_null</b>, referral state <b>INVITER_FRIEND_JOINED</b>, “OR” between conditions (every condition must hold together), any field not in the menu. If a condition isn't in the menu, it can't be done.
+        </div>
+      </div>
+      <div id="bview-deeplinks" style="display:none">
+        <div class="card br-dl">
+          <div class="br-dl-head">
+            <div>
+              <div class="br-dl-title">Deeplink destinations by placement</div>
+              <div class="br-dl-sub">Where a banner's <b>Show button</b> can deep-link to, per screen (placement). This is separate from the audience rules on the <b>Rule builder</b> tab — that's <b>who</b> sees the banner, this is <b>where the button goes</b>. If a placement can't open the chosen destination, the app silently hides the banner.</div>
+            </div>
+          </div>
+          <div class="br-dl-body">
+            <div class="br-dl-scroll" id="br-dl-table"></div>
+            <div class="br-dl-notes" id="br-dl-notes"></div>
           </div>
         </div>
       </div>
@@ -2816,6 +2854,46 @@ const BR_PRESETS=[
 ];
 function brApplyPreset(i){brResetState(false);if(i>=0&&BR_PRESETS[i])BR_PRESETS[i][1]();brRenderControls();}
 function brRenderPresets(){const el=document.getElementById('br-presets');if(!el)return;el.innerHTML=BR_PRESETS.map((p,i)=>`<button type="button" class="br-preset" onclick="brApplyPreset(${i})">${p[0]}</button>`).join('')+`<button type="button" class="br-preset" onclick="brApplyPreset(-1)">Clear</button>`;}
+// ── Deeplink destinations matrix (reference; source: Banner_destinations_by_placement) ──
+const BR_DL_PLACEMENTS=['DASHBOARD','ASSET_PAGE','PROFILE','DEPOSIT','CASH','PORTFOLIO','TAILORED_PORTFOLIO','RISK_QUESTIONNAIRE_RISK_TOLERANCE','RISK_QUESTIONNAIRE_PORTFOLIO_READY'];
+const BR_DL_MATRIX=[
+  ['KYC',[1,0,1,0,0,0,0,0,0]],
+  ['KYC_DOCUMENT_RENEWAL',[1,0,1,0,0,0,0,0,0]],
+  ['KYC_DOCUMENT_EXPIRED',[1,0,1,0,0,0,0,0,0]],
+  ['RISK_QUESTIONNAIRE',[1,0,1,0,0,0,0,0,0]],
+  ['TAILORED_PORTFOLIO',[1,0,1,0,0,0,0,0,0]],
+  ['TAILORED_PORTFOLIO_BUY',[0,0,0,0,0,0,1,0,0]],
+  ['DEPOSIT',[1,0,0,0,0,0,0,0,0]],
+  ['EXPLORE',[1,0,0,0,0,1,0,0,0]],
+  ['IDLE_CASH',[1,0,0,0,1,0,0,0,0]],
+  ['BONUS_DETAILS',[1,0,0,0,0,0,0,0,0]],
+  ['REWARDS',[1,0,1,0,0,0,0,0,0]],
+  ['SELECT_BONUS_STOCK',[1,0,0,0,0,1,0,0,0]],
+  ['FINANCE_ADVISOR_CONTACT',[0,1,1,0,0,0,0,1,1]],
+];
+const BR_DL_NOTES=[
+  ['Rule',"Applies when the banner's Show button is ON with an in-app destination. If the placement can't open that destination, the app silently hides the banner (no error)."],
+  ['Always allowed','Button OFF, or an external link with a valid http/https address, can be shown on any placement.'],
+  ['Bonus details','Never shown if the Action param is empty.'],
+  ['Tailored portfolio buy','Only works on the Tailored portfolio placement. Whether the user has a tailored portfolio is not checked by the backend.'],
+  ['Deposit placement','No in-app destinations. Only banners with the button OFF or an external link.'],
+  ['Profile placement','PROFILE means the Personal details section. The main Profile screen is not controlled from the admin panel yet — this is planned for the future.'],
+];
+function renderDlMatrix(){
+  const t=document.getElementById('br-dl-table'); if(!t) return;
+  const head='<tr><th>Destination \\ Placement</th>'+BR_DL_PLACEMENTS.map(p=>`<th>${p}</th>`).join('')+'</tr>';
+  const body=BR_DL_MATRIX.map(([dest,cells])=>`<tr><th>${dest}</th>`+cells.map(c=>c?'<td class="yes">✓</td>':'<td class="no">–</td>').join('')+'</tr>').join('');
+  t.innerHTML=`<table class="br-dl-tbl"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  const n=document.getElementById('br-dl-notes'); if(n)n.innerHTML=BR_DL_NOTES.map(([k,v])=>`<div class="br-dl-note"><b>${k}:</b> ${v}</div>`).join('');
+}
+function setBannerView(v){
+  document.getElementById('bview-builder').style.display=v==='builder'?'':'none';
+  document.getElementById('bview-deeplinks').style.display=v==='deeplinks'?'':'none';
+  document.getElementById('bvtab-builder').classList.toggle('on',v==='builder');
+  document.getElementById('bvtab-deeplinks').classList.toggle('on',v==='deeplinks');
+}
+renderDlMatrix();
+
 brRenderPresets();
 brRenderControls();
 
