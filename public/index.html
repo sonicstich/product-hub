@@ -543,6 +543,69 @@ html.reporter-boot #nav-incidents{display:flex}
 .doc-callout{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.6;color:#92400e}
 .doc-nav-empty{padding:5px 10px 6px 32px;font-size:11.5px;color:rgba(255,255,255,.3);font-style:italic}
 .collapsed .doc-tree{display:none}
+/* ── Banner rules builder ── */
+.br-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.br-builder{flex:1 1 440px;min-width:320px}
+.br-output{flex:1 1 380px;min-width:300px;position:sticky;top:20px}
+.br-group{margin-bottom:22px}
+.br-group:last-child{margin-bottom:0}
+.br-group-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid #f0eeeb}
+.br-field{margin-bottom:16px}
+.br-field:last-child{margin-bottom:0}
+.br-label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px}
+.br-hint{font-weight:400;color:#9ca3af;font-size:12px}
+.br-chips{display:flex;flex-wrap:wrap;gap:7px}
+.br-chip{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:18px;cursor:pointer;font-size:12.5px;color:#374151;transition:all .13s;user-select:none;background:#fff}
+.br-chip:hover{border-color:#E07532}
+.br-chip.on{background:rgba(224,117,50,.12);border-color:#E07532;color:#C8641C;font-weight:600}
+.br-tri{display:inline-flex;border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.br-tri button{appearance:none;border:none;background:#fff;font-family:inherit;font-size:12.5px;color:#6b7280;padding:6px 13px;cursor:pointer;border-left:1.5px solid #e5e7eb;transition:all .12s}
+.br-tri button:first-child{border-left:none}
+.br-tri button:hover{background:#faf8f5}
+.br-tri button.on-ignore{background:#f3f4f6;color:#374151;font-weight:600}
+.br-tri button.on-true{background:#f0fdf4;color:#16a34a;font-weight:700}
+.br-tri button.on-false{background:#fef2f2;color:#dc2626;font-weight:700}
+.br-row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.br-row .br-label{margin-bottom:0;flex:1}
+.br-num{width:96px;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13.5px;font-family:inherit;color:#111827}
+.br-num:focus{outline:none;border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
+.br-sel{width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13.5px;font-family:inherit;color:#111827;background:#fff;cursor:pointer}
+.br-sel:focus{outline:none;border-color:#E07532}
+.br-ctag{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.br-ctag span{display:inline-flex;align-items:center;gap:5px;background:rgba(224,117,50,.12);color:#C8641C;border:1px solid rgba(224,117,50,.35);border-radius:6px;padding:3px 8px;font-size:12.5px;font-weight:600}
+.br-ctag span b{cursor:pointer;font-weight:700;opacity:.6}
+.br-ctag span b:hover{opacity:1}
+.br-cinput{display:flex;gap:7px}
+.br-cinput input{flex:1;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13.5px;font-family:inherit;text-transform:uppercase}
+.br-cinput input:focus{outline:none;border-color:#E07532}
+.br-add{padding:7px 14px;border:1.5px solid #E07532;background:#fff;color:#E07532;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.br-add:hover{background:#fef6ee}
+.br-optnote{font-size:13px;color:#6b7280;background:#faf8f5;border:1px solid #f0eeeb;border-left:3px solid #E07532;border-radius:8px;padding:10px 13px;margin:0 0 16px;line-height:1.5}
+.br-optnote b{color:#374151}
+.br-presets{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px}
+.br-preset{padding:6px 12px;border:1.5px dashed #d6d3ce;background:#fff;border-radius:8px;font-size:12.5px;color:#6b7280;cursor:pointer;font-family:inherit;transition:all .13s}
+.br-preset:hover{border-color:#E07532;color:#C8641C;border-style:solid}
+.br-out-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.br-out-head span{font-size:13px;font-weight:700;color:#141210}
+.br-out-actions{display:flex;gap:7px}
+.br-btn{padding:6px 13px;border:1.5px solid #d1d5db;background:#fff;border-radius:8px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:all .13s}
+.br-btn:hover{border-color:#E07532;color:#E07532}
+.br-btn-primary{background:#E07532;border-color:#E07532;color:#fff}
+.br-btn-primary:hover{background:#C8641C;color:#fff}
+.br-json{background:#1c1917;color:#e7e5e4;border-radius:10px;padding:15px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;margin:0;overflow-x:auto}
+.br-warns{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.br-warn{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.45;padding:9px 11px;border-radius:8px}
+.br-warn.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.br-warn.warn{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.br-warn.info{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+.br-warn .br-ic{flex-shrink:0;font-size:13px;line-height:1.3}
+.br-expl-head{font-size:13px;font-weight:700;color:#141210;margin:18px 0 8px}
+.br-explain{font-size:13px;color:#374151;line-height:1.6}
+.br-explain ul{margin:6px 0 0;padding-left:18px}
+.br-explain li{margin-bottom:3px}
+.br-explain .br-muted{color:#9ca3af}
+.br-cant{margin-top:16px;font-size:12.5px;color:#6b7280;line-height:1.55;background:#faf8f5;border:1px solid #f0eeeb;border-radius:8px;padding:11px 13px}
+.br-cant b{color:#374151}
 </style>
 </head>
 <body>
@@ -592,6 +655,13 @@ html.reporter-boot #nav-incidents{display:flex}
       <div class="nav-item" id="nav-calendar" onclick="go('calendar',this)">
         <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
         <span class="nav-label">Release Calendar</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item" id="nav-banners" onclick="go('banners',this)">
+        <div class="nav-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1 2 2 2 2 0 0 1-2 2v5a2 2 0 0 1-2 2h-1"/></svg></div>
+        <span class="nav-label">Banner rules</span>
       </div>
     </div>
     <div class="nav-section ops-section">
@@ -1163,6 +1233,35 @@ My question: </pre>
       </div>
     </div>
 
+    <div id="page-banners" class="page">
+      <div class="ph">
+        <h2>Banner rules</h2>
+        <p>Build a banner's audience rule without code. Pick the conditions you need — a valid JSON assembles itself. In the admin panel set <b>Audience type = rules</b> and paste this JSON into the Rules field.</p>
+      </div>
+      <div class="br-optnote"><b>All fields are optional.</b> Add only the conditions you care about — anything you leave on <b>“Any”</b> (or leave blank) is ignored, not set to false.</div>
+      <div class="br-presets" id="br-presets"></div>
+      <div class="br-wrap">
+        <div class="card br-builder">
+          <div id="br-controls"></div>
+        </div>
+        <div class="card br-output">
+          <div class="br-out-head">
+            <span>Rule JSON</span>
+            <div class="br-out-actions">
+              <button type="button" class="br-btn br-btn-primary" id="br-copy" onclick="copyBannerJson(this)">Copy</button>
+            </div>
+          </div>
+          <pre id="br-json" class="br-json"></pre>
+          <div id="br-warnings" class="br-warns"></div>
+          <div class="br-expl-head">What this rule does</div>
+          <div id="br-explain" class="br-explain"></div>
+          <div class="br-cant">
+            <b>What can't be built</b> (the banner engine doesn't support it): deposit amount (“more than $100”), deposit count (only “has deposited / hasn't”), <b>deposited_is_null</b>, referral state <b>INVITER_FRIEND_JOINED</b>, “OR” between conditions (every condition must hold together), any field not in the menu. If a condition isn't in the menu, it can't be done.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="page-doc-adminpanel" class="page">
       <div class="ph"><h2>Admin panel — account status, email &amp; phone</h2><p>Recent Admin Panel changes: roles &amp; access, the new account-status field, and the account-closure pipeline.</p></div>
       <div class="card" style="max-width:840px">
@@ -1577,8 +1676,8 @@ async function saveReleaseEdit(key,num){
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',docsearch:'AI documentation search','doc-adminpanel':'Admin panel'};
-const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',docsearch:'nav-docsearch'};
+const TITLES={home:'Home',calendar:'Release Calendar',incidents:'Open Incidents',incident:'Report Incident',task:'Create Task',feedback:'Share user feedback',banners:'Banner rules',docsearch:'AI documentation search','doc-adminpanel':'Admin panel'};
+const NAV_ID={home:'nav-home',calendar:'nav-calendar',task:'nav-task',incidents:'nav-incidents',incident:'nav-incident',feedback:'nav-feedback',banners:'nav-banners',docsearch:'nav-docsearch'};
 function go(id,el){
   // Restricted reporters can only see Report Incident + Open Incidents — pin them there.
   if(window.__isReporter && !REPORTER_PAGES.includes(id)){ id='incident'; el=null; }
@@ -2547,6 +2646,179 @@ function renderDocsNav(){
     </div>`;
   }).join('');
 }
+// ── BANNER RULES BUILDER ─────────────────────────────────────────────
+// Pure client-side. Assembles a valid "version 2" rules JSON from a fixed
+// menu of supported conditions (see Banner rules guide). Nothing leaves the
+// browser. Every condition is optional; unsupported ones simply aren't offered.
+const BR_KYC=[
+  ['not_started','Has not started verification'],['in_progress','Started, not finished'],
+  ['under_review','Submitted, under review'],['rejected','Rejected'],
+  ['completed','Checks done, account not open yet'],['activated','Account open (the usual "verified")'],
+  ['unsupported_country','Country not supported'],['expired_soon','ID expiring soon (account open)'],
+  ['expired','ID expired (account open)'],['renew_in_progress','Renewal started'],
+  ['renew_under_review','Renewal under review'],['renew_rejected','Renewal rejected'],
+  ['sign_agreements_error','Failed at the agreements step'],['waiting_for_idwise_webhook','Waiting for the identity provider'],
+];
+const BR_REWARDS=[
+  ['INVITEE_PENDING','Invited friend, still finishing steps'],
+  ['INVITEE_EXPIRING_SOON','Same friend, last 7 days before invite expires'],
+  ['INVITEE_BONUS_READY','Invited friend, gift credited'],
+];
+const BR_BONUS=[
+  ['RAMADAN_TP_DISCOUNTED_FEE','Ramadan: TP fee discount'],
+  ['TP_PROMO_PERIOD_ORDERS_DISCOUNTED_FEE','Promo period: TP order discount'],
+  ['PROMOCODE_FIRST_TRADE','First-trade promo code'],
+];
+const BR_SCREENS=['Dashboard','Asset page','Portfolio','Profile','Cash','Deposit','Risk questionnaire','Other'];
+// [key, label, screenTag?]  screenTag: 'portfolio' (Dashboard/Asset/Portfolio) | 'portfolio-only' (Portfolio only)
+const BR_BOOLS=[
+  ['rq_completed','Finished the risk questionnaire'],
+  ['deposited','Has deposited'],
+  ['tp_created','Has a tailored portfolio','portfolio'],
+  ['tp_top_up','Topped up / updated tailored portfolio'],
+  ['idle_cash_enabled','Idle cash / Shariah cash is on now'],
+  ['has_ever_enabled_idle_cash','Has ever turned idle cash on'],
+  ['require_interest_cash','Cash-interest rate available (product available)'],
+  ['has_positions','Holds at least one asset','portfolio'],
+  ['tailored_portfolios_empty','Has no tailored portfolio','portfolio'],
+  ['promo_codes_empty','Has no promo code'],
+  ['portfolio_empty','Portfolio empty: no positions and no TP','portfolio-only'],
+];
+const BR_PORT_SCREENS=['Dashboard','Asset page','Portfolio'];
+const brState={screen:'Dashboard',kyc:new Set(),countries:[],age_min:'',age_max:'',trades_min:'',trades_max:'',reward_states:new Set(),bonus_type:'',bools:{}};
+function brResetState(keepScreen){const sc=keepScreen?brState.screen:'Dashboard';brState.screen=sc;brState.kyc=new Set();brState.countries=[];brState.age_min='';brState.age_max='';brState.trades_min='';brState.trades_max='';brState.reward_states=new Set();brState.bonus_type='';brState.bools={};BR_BOOLS.forEach(([k])=>brState.bools[k]='ignore');}
+brResetState(false);
+
+function brTri(key,label,tag){
+  const v=brState.bools[key]||'ignore';
+  const hint=tag==='portfolio'?' <span class="br-hint">(Dashboard/Asset/Portfolio)</span>':tag==='portfolio-only'?' <span class="br-hint">(Portfolio only)</span>':'';
+  const b=(val,txt)=>`<button type="button" data-val="${val}" class="${v===val?'on-'+val:''}" onclick="brSetBool('${key}','${val}')">${txt}</button>`;
+  return `<div class="br-field br-row"><label class="br-label">${label}${hint}</label><div class="br-tri" data-key="${key}">${b('ignore','Any')}${b('true','Yes')}${b('false','No')}</div></div>`;
+}
+function brRenderControls(){
+  const c=document.getElementById('br-controls'); if(!c) return;
+  const kycChips=BR_KYC.map(([v,l])=>`<div class="br-chip ${brState.kyc.has(v)?'on':''}" title="${l}" onclick="brToggleChip('kyc','${v}',this)">${v}</div>`).join('');
+  const rewChips=BR_REWARDS.map(([v,l])=>`<div class="br-chip ${brState.reward_states.has(v)?'on':''}" title="${l}" onclick="brToggleChip('reward','${v}',this)">${v}</div>`).join('');
+  const ctags=brState.countries.map((c2,i)=>`<span>${c2}<b onclick="brRemoveCountry(${i})">✕</b></span>`).join('');
+  const bonusOpts=['<option value="">— any —</option>'].concat(BR_BONUS.map(([v,l])=>`<option value="${v}" ${brState.bonus_type===v?'selected':''}>${v} — ${l}</option>`)).join('');
+  const scrOpts=BR_SCREENS.map(s=>`<option value="${s}" ${brState.screen===s?'selected':''}>${s}</option>`).join('');
+  c.innerHTML=`
+    <div class="br-group">
+      <div class="br-group-t">Banner screen</div>
+      <div class="br-field"><label class="br-label">Placement <span class="br-hint">(not part of the JSON — set in the admin panel; drives the warnings)</span></label>
+        <select class="br-sel" onchange="brSetScreen(this.value)">${scrOpts}</select></div>
+    </div>
+    <div class="br-group">
+      <div class="br-group-t">Who the user is</div>
+      <div class="br-field"><label class="br-label">Verification status (kyc_statuses) <span class="br-hint">— one of the selected</span></label><div class="br-chips">${kycChips}</div></div>
+      <div class="br-field"><label class="br-label">Residence countries (countries) <span class="br-hint">— 3-letter ISO code, e.g. ARE</span></label>
+        <div class="br-cinput"><input id="br-country-inp" maxlength="3" placeholder="ARE" onkeydown="if(event.key==='Enter'){event.preventDefault();brAddCountry();}"><button type="button" class="br-add" onclick="brAddCountry()">Add</button></div>
+        <div class="br-ctag">${ctags}</div></div>
+      <div class="br-field br-row"><label class="br-label">Age from (age_min)</label><input type="number" min="0" step="1" class="br-num" value="${brState.age_min}" oninput="brNum('age_min',this.value)"></div>
+      <div class="br-field br-row"><label class="br-label">Age to (age_max)</label><input type="number" min="0" step="1" class="br-num" value="${brState.age_max}" oninput="brNum('age_max',this.value)"></div>
+    </div>
+    <div class="br-group">
+      <div class="br-group-t">Onboarding &amp; products</div>
+      ${['rq_completed','deposited','tp_created','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash','require_interest_cash'].map(k=>{const f=BR_BOOLS.find(x=>x[0]===k);return brTri(f[0],f[1],f[2]);}).join('')}
+    </div>
+    <div class="br-group">
+      <div class="br-group-t">Trading</div>
+      <div class="br-field br-row"><label class="br-label">Trades minimum (trades_min) <span class="br-hint">1 = at least one</span></label><input type="number" min="0" step="1" class="br-num" value="${brState.trades_min}" oninput="brNum('trades_min',this.value)"></div>
+      <div class="br-field br-row"><label class="br-label">Trades maximum (trades_max) <span class="br-hint">0 = none</span></label><input type="number" min="0" step="1" class="br-num" value="${brState.trades_max}" oninput="brNum('trades_max',this.value)"></div>
+    </div>
+    <div class="br-group">
+      <div class="br-group-t">Rewards, bonuses, portfolio</div>
+      <div class="br-field"><label class="br-label">Referral state (reward_states) <span class="br-hint">— one of the selected</span></label><div class="br-chips">${rewChips}</div></div>
+      <div class="br-field"><label class="br-label">Current promo (bonus_type)</label><select class="br-sel" onchange="brSetBonus(this.value)">${bonusOpts}</select></div>
+      ${['has_positions','tailored_portfolios_empty','promo_codes_empty','portfolio_empty'].map(k=>{const f=BR_BOOLS.find(x=>x[0]===k);return brTri(f[0],f[1],f[2]);}).join('')}
+    </div>`;
+  rebuildBanner();
+}
+function brSetScreen(v){brState.screen=v;rebuildBanner();}
+function brSetBonus(v){brState.bonus_type=v;rebuildBanner();}
+function brNum(key,val){brState[key]=val;rebuildBanner();}
+function brSetBool(key,val){brState.bools[key]=val;const g=document.querySelector('.br-tri[data-key="'+key+'"]');if(g)g.querySelectorAll('button').forEach(b=>b.className=(b.dataset.val===val)?('on-'+val):'');rebuildBanner();}
+function brToggleChip(kind,val,el){const set=kind==='kyc'?brState.kyc:brState.reward_states;if(set.has(val))set.delete(val);else set.add(val);el.classList.toggle('on',set.has(val));rebuildBanner();}
+function brAddCountry(){const inp=document.getElementById('br-country-inp');if(!inp)return;const v=(inp.value||'').trim().toUpperCase();if(/^[A-Z]{3}$/.test(v)){if(!brState.countries.includes(v))brState.countries.push(v);inp.value='';brRenderControls();document.getElementById('br-country-inp').focus();}else{inp.style.borderColor='#fca5a5';}}
+function brRemoveCountry(i){brState.countries.splice(i,1);brRenderControls();}
+function brValues(){
+  const v={};
+  if(brState.kyc.size) v.kyc_statuses=[...brState.kyc];
+  if(brState.countries.length) v.countries=[...brState.countries];
+  const num=k=>{const s=brState[k];return s!==''&&s!=null&&!isNaN(+s)?parseInt(s,10):null;};
+  const am=num('age_min'),ax=num('age_max'),tm=num('trades_min'),tx=num('trades_max');
+  if(am!=null)v.age_min=am; if(ax!=null)v.age_max=ax;
+  BR_BOOLS.forEach(([k])=>{const b=brState.bools[k];if(b==='true')v[k]=true;else if(b==='false')v[k]=false;});
+  if(tm!=null)v.trades_min=tm; if(tx!=null)v.trades_max=tx;
+  if(brState.reward_states.size) v.reward_states=[...brState.reward_states];
+  if(brState.bonus_type) v.bonus_type=brState.bonus_type;
+  return v;
+}
+const BR_ORDER=['kyc_statuses','countries','age_min','age_max','rq_completed','deposited','tp_created','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash','require_interest_cash','trades_min','trades_max','reward_states','bonus_type','promo_codes_empty','has_positions','tailored_portfolios_empty','portfolio_empty'];
+function brWarnings(v){
+  const W=[],scr=brState.screen;
+  if('age_min'in v&&v.age_min<0)W.push(['err','Age cannot be negative.']);
+  if('age_max'in v&&v.age_max<0)W.push(['err','Age cannot be negative.']);
+  if('age_min'in v&&'age_max'in v&&v.age_min>v.age_max)W.push(['err','age_min is greater than age_max — the rule is invalid.']);
+  if('age_min'in v&&v.age_min>0)W.push(['info','Users with no date of birth count as age 0, so age_min also hides them.']);
+  if('trades_min'in v&&v.trades_min<0)W.push(['err','trades_min cannot be negative.']);
+  if('trades_max'in v&&v.trades_max<0)W.push(['err','trades_max cannot be negative.']);
+  if('trades_min'in v&&'trades_max'in v&&v.trades_min>v.trades_max)W.push(['err','trades_min is greater than trades_max — the rule is invalid.']);
+  if('trades_min'in v&&v.trades_min>100)W.push(['warn','trades_min above 100 — the app counts at most 100 filled orders, so this never matches.']);
+  if(brState.kyc.has('activated')&&(brState.kyc.has('expired')||brState.kyc.has('expired_soon')))W.push(['warn','Don’t combine activated with expired/expired_soon: a user has one status at a time. expired/expired_soon already mean "account open, ID expiring/expired".']);
+  ['tp_created','has_positions','tailored_portfolios_empty'].forEach(k=>{if(k in v&&!BR_PORT_SCREENS.includes(scr))W.push(['warn',k+' only works reliably on Dashboard, Asset page, Portfolio. On the "'+scr+'" screen the app doesn’t check it — it will match the wrong users.']);});
+  if('portfolio_empty'in v&&scr!=='Portfolio')W.push(['warn','portfolio_empty only works on the Portfolio screen. Don’t use it on "'+scr+'".']);
+  if('require_interest_cash'in v&&v.require_interest_cash===false)W.push(['info','require_interest_cash: false is the same as leaving it out (the app ignores it).']);
+  if('bonus_type'in v)W.push(['info','bonus_type is compared only against the user’s current promo. In the dashboard_bonus group only the banner whose bonus_type matches is shown.']);
+  if(Object.keys(v).length===0)W.push(['info','Empty rule = every logged-in user. Logged-out users never see rules banners — use Audience type = all for them.']);
+  return W;
+}
+function brExplain(v){
+  if(Object.keys(v).length===0)return '<span class="br-muted">No conditions selected yet — every logged-in user will see the banner.</span>';
+  const P=[];
+  if(v.kyc_statuses)P.push('verification status is one of: '+v.kyc_statuses.join(', '));
+  if(v.countries)P.push('residence country (from KYC) is one of: '+v.countries.join(', '));
+  if('age_min'in v)P.push('age ≥ '+v.age_min);
+  if('age_max'in v)P.push('age ≤ '+v.age_max);
+  const PH={rq_completed:['finished the risk questionnaire','has NOT finished the risk questionnaire'],deposited:['has deposited','has never deposited'],tp_created:['has a tailored portfolio','has no tailored portfolio'],tp_top_up:['has topped up / updated the tailored portfolio','has not topped up the tailored portfolio'],idle_cash_enabled:['idle cash is on now','idle cash is off'],has_ever_enabled_idle_cash:['has turned idle cash on before','has never turned idle cash on'],require_interest_cash:['cash-interest rate is available','require_interest_cash=false (ignored)'],has_positions:['holds at least one asset','holds no assets'],tailored_portfolios_empty:['has no tailored portfolio','has a tailored portfolio'],promo_codes_empty:['has no promo code','has a promo code'],portfolio_empty:['portfolio is completely empty','portfolio is not empty']};
+  Object.keys(PH).forEach(k=>{if(k in v)P.push(v[k]?PH[k][0]:PH[k][1]);});
+  if('trades_min'in v)P.push('filled trades ≥ '+v.trades_min);
+  if('trades_max'in v)P.push('filled trades ≤ '+v.trades_max);
+  if(v.reward_states)P.push('referral state is one of: '+v.reward_states.join(', '));
+  if('bonus_type'in v)P.push('current promo = '+v.bonus_type);
+  return 'Only users who match <b>ALL</b> of these will see the banner:<ul>'+P.map(p=>'<li>'+p+'</li>').join('')+'</ul>';
+}
+function rebuildBanner(){
+  const v=brValues();
+  const o={version:2};
+  BR_ORDER.forEach(k=>{if(k in v)o[k]=v[k];});
+  const jsonEl=document.getElementById('br-json'); if(jsonEl)jsonEl.textContent=JSON.stringify(o,null,2);
+  const W=brWarnings(v);
+  const IC={err:'⛔',warn:'⚠️',info:'ℹ️'};
+  const wEl=document.getElementById('br-warnings');
+  if(wEl)wEl.innerHTML=W.map(([t,m])=>`<div class="br-warn ${t}"><span class="br-ic">${IC[t]}</span><span>${m}</span></div>`).join('');
+  const eEl=document.getElementById('br-explain'); if(eEl)eEl.innerHTML=brExplain(v);
+}
+function copyBannerJson(btn){
+  const txt=document.getElementById('br-json').textContent;
+  const done=()=>{const t=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>btn.textContent=t,1400);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));}
+  else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done&&done();}catch(_){}ta.remove();}
+const BR_PRESETS=[
+  ['Verified only',()=>{brState.kyc=new Set(['activated']);}],
+  ['Verified + questionnaire not done + no deposit',()=>{brState.kyc=new Set(['activated']);brState.bools.rq_completed='false';brState.bools.deposited='false';}],
+  ['ID expired / expiring',()=>{brState.kyc=new Set(['expired','expired_soon']);}],
+  ['UAE, 18+, verified',()=>{brState.kyc=new Set(['activated']);brState.countries=['ARE'];brState.age_min='18';}],
+  ['No trades & no positions (Dashboard)',()=>{brState.screen='Dashboard';brState.trades_max='0';brState.bools.has_positions='false';}],
+  ['Invited friend: gift ready',()=>{brState.reward_states=new Set(['INVITEE_BONUS_READY']);}],
+];
+function brApplyPreset(i){brResetState(false);if(i>=0&&BR_PRESETS[i])BR_PRESETS[i][1]();brRenderControls();}
+function brRenderPresets(){const el=document.getElementById('br-presets');if(!el)return;el.innerHTML=BR_PRESETS.map((p,i)=>`<button type="button" class="br-preset" onclick="brApplyPreset(${i})">${p[0]}</button>`).join('')+`<button type="button" class="br-preset" onclick="brApplyPreset(-1)">Clear</button>`;}
+brRenderPresets();
+brRenderControls();
+
 renderDocsNav();
 // Route to the initial page now that every top-level declaration exists.
 goFromHash();
