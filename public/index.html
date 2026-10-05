@@ -634,8 +634,8 @@ html.reporter-boot #nav-incidents{display:flex}
 .br-dl-tbl tr.br-dl-always th{background:#fffbeb;color:#b45309}
 /* Placements gallery */
 .pl-intro{font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:18px;max-width:680px}
-.pl-grid{column-width:172px;column-gap:22px}
-.pl-card{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 26px;text-align:center}
+.pl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 18px;justify-items:center;align-items:start}
+.pl-card{text-align:center;width:100%;max-width:200px}
 .pl-phones{display:flex;flex-direction:column;align-items:center;gap:14px}
 .pl-phone{width:100%;max-width:190px;margin:0 auto;background:#111014;border-radius:24px;padding:6px;box-shadow:0 14px 32px rgba(20,18,16,.18),0 3px 8px rgba(20,18,16,.09)}
 .pl-phone-scr{border-radius:19px;overflow:hidden;background:#000;aspect-ratio:9/19.5;position:relative}
@@ -3005,11 +3005,14 @@ const BR_PL_INFO=[
 ];
 function renderPlacements(){
   const g=document.getElementById('pl-gallery'); if(!g) return;
-  g.innerHTML=BR_PL_INFO.map(([code,name,imgs])=>{
-    const phones=imgs.map(f=>`<div class="pl-phone"><div class="pl-phone-scr"><img src="placements/${f}" alt="${code}" loading="lazy" onclick="openPlImg('placements/${f}')"></div></div>`).join('');
+  const cards=[];
+  BR_PL_INFO.forEach(([code,name,imgs])=>{
     const banBadge=code==='DEPOSIT'?'<div class="pl-noban">No banners on this screen</div>':'';
-    return `<div class="pl-card"><div class="pl-phones">${phones}</div><div class="pl-meta"><div class="pl-code">${code}</div><div class="pl-name">${name}</div>${banBadge}</div></div>`;
-  }).join('');
+    imgs.forEach(f=>{
+      cards.push(`<div class="pl-card"><div class="pl-phones"><div class="pl-phone"><div class="pl-phone-scr"><img src="placements/${f}" alt="${code}" loading="lazy" onclick="openPlImg('placements/${f}')"></div></div></div><div class="pl-meta"><div class="pl-code">${code}</div><div class="pl-name">${name}</div>${banBadge}</div></div>`);
+    });
+  });
+  g.innerHTML=cards.join('');
 }
 function openPlImg(src){const img=document.getElementById('pl-lightbox-img');if(img)img.src=src;document.getElementById('pl-lightbox').classList.add('on');}
 function closePlImg(){document.getElementById('pl-lightbox').classList.remove('on');}
