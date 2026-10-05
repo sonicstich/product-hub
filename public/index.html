@@ -565,6 +565,12 @@ html.reporter-boot #nav-incidents{display:flex}
 .br-tri button.on-ignore{background:#f3f4f6;color:#374151;font-weight:600}
 .br-tri button.on-true{background:#f0fdf4;color:#16a34a;font-weight:700}
 .br-tri button.on-false{background:#fef2f2;color:#dc2626;font-weight:700}
+.br-tri.br-tri-locked{opacity:.5}
+.br-tri.br-tri-locked button{cursor:not-allowed}
+.br-lockhint{font-size:11.5px;color:#9ca3af;line-height:1.4;margin-top:5px}
+.br-lockhint.locked{color:#b45309}
+.br-ex-ta{width:100%;min-height:240px;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.55;padding:13px;border:1.5px solid #d1d5db;border-radius:10px;resize:vertical;color:#111827}
+.br-ex-ta:focus{outline:none;border-color:#E07532;box-shadow:0 0 0 3px rgba(224,117,50,.1)}
 .br-row{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .br-row .br-label{margin-bottom:0;flex:1}
 .br-num{width:96px;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13.5px;font-family:inherit;color:#111827}
@@ -622,6 +628,8 @@ html.reporter-boot #nav-incidents{display:flex}
 .br-dl-tbl td{font-size:12px}
 .br-dl-tbl td.yes{background:#f0fdf4;color:#16a34a;font-weight:700}
 .br-dl-tbl td.no{color:#d8dbe0}
+.br-dl-noban{font-size:8px;font-weight:700;color:#b91c1c;letter-spacing:.2px;margin-top:2px;text-transform:none}
+.pl-noban{display:inline-block;margin-top:5px;font-size:11px;font-weight:600;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:2px 8px}
 .br-dl-tbl tr.br-dl-always th,.br-dl-tbl tr.br-dl-always td{border-top:2px solid #e2ddd4}
 .br-dl-tbl tr.br-dl-always th{background:#fffbeb;color:#b45309}
 /* Placements gallery */
@@ -1279,6 +1287,7 @@ My question: </pre>
         <button class="inc-vtab on" id="bvtab-builder" onclick="setBannerView('builder')">Rule builder</button>
         <button class="inc-vtab" id="bvtab-deeplinks" onclick="setBannerView('deeplinks')">Deeplink matrix</button>
         <button class="inc-vtab" id="bvtab-placements" onclick="setBannerView('placements')">Placements</button>
+        <button class="inc-vtab" id="bvtab-explain" onclick="setBannerView('explain')">Explain JSON</button>
       </div>
       <div id="bview-builder">
         <div class="br-optnote"><b>All fields are optional.</b> Add only the conditions you care about — anything you leave on <b>“Any”</b> (or leave blank) is ignored, not set to false.</div>
@@ -1298,6 +1307,8 @@ My question: </pre>
             <div id="br-warnings" class="br-warns"></div>
             <div class="br-expl-head">What this rule does</div>
             <div id="br-explain" class="br-explain"></div>
+            <div class="br-expl-head">Allowed destinations <span class="br-hint" id="br-dests-scr"></span></div>
+            <div id="br-dests" class="br-explain"></div>
             <div class="br-cant">
               <b>What can't be built</b> (the banner engine doesn't support it): deposit amount (“more than $100”), deposit count (only “has deposited / hasn't”), <b>deposited_is_null</b>, referral state <b>INVITER_FRIEND_JOINED</b>, “OR” between conditions (every condition must hold together), any field not in the menu. If a condition isn't in the menu, it can't be done.
             </div>
@@ -1321,6 +1332,20 @@ My question: </pre>
       <div id="bview-placements" style="display:none">
         <div class="pl-intro">Each column in the <b>Deeplink matrix</b> is one of these app screens. Tap a screenshot to enlarge.</div>
         <div class="pl-grid" id="pl-gallery"></div>
+      </div>
+      <div id="bview-explain" style="display:none">
+        <div class="br-optnote">Paste a rule JSON (from a banner's <b>Rules</b> field) and see what it means in plain language — plus any problems.</div>
+        <div class="br-wrap">
+          <div class="card br-builder">
+            <div class="br-field"><label class="br-label">Rule JSON</label>
+              <textarea id="br-ex-input" class="br-ex-ta" placeholder='{"version": 2, "kyc_statuses": ["activated"], "deposited": false}' oninput="explainRuleJson()"></textarea></div>
+          </div>
+          <div class="card br-output">
+            <div class="br-expl-head">What this rule does</div>
+            <div id="br-ex-explain" class="br-explain"></div>
+            <div id="br-ex-warnings" class="br-warns"></div>
+          </div>
+        </div>
       </div>
       <div id="pl-lightbox" class="pl-lightbox" onclick="closePlImg()"><img id="pl-lightbox-img" alt=""></div>
     </div>
@@ -2732,31 +2757,48 @@ const BR_BONUS=[
   ['TP_PROMO_PERIOD_ORDERS_DISCOUNTED_FEE','Promo period: TP order discount'],
   ['PROMOCODE_FIRST_TRADE','First-trade promo code'],
 ];
-const BR_SCREENS=['Dashboard','Asset page','Portfolio','Profile','Cash','Deposit','Risk questionnaire','Other'];
-// [key, label, screenTag?]  screenTag: 'portfolio' (Dashboard/Asset/Portfolio) | 'portfolio-only' (Portfolio only)
+// Placement codes match the Deeplink matrix / Placements tab exactly.
+const BR_PLACEMENTS=[
+  ['DASHBOARD','Dashboard'],['ASSET_PAGE','Asset page'],['PROFILE','Profile / Personal details'],
+  ['DEPOSIT','Deposit'],['CASH','Cash'],['PORTFOLIO','Portfolio'],['TAILORED_PORTFOLIO','Tailored portfolio'],
+  ['RISK_QUESTIONNAIRE_RISK_TOLERANCE','Risk questionnaire · risk tolerance'],['RISK_QUESTIONNAIRE_PORTFOLIO_READY','Risk questionnaire · portfolio ready'],
+];
+const brScreenLabel=c=>{const f=BR_PLACEMENTS.find(x=>x[0]===c);return f?f[1]:c;};
+const BR_PORT_SCREENS=['DASHBOARD','ASSET_PAGE','PORTFOLIO'];
+// [key, label, screenTag?, hint?]  screenTag: 'portfolio' (Dashboard/Asset/Portfolio)
 const BR_BOOLS=[
   ['rq_completed','Finished the risk questionnaire'],
   ['deposited','Has deposited'],
-  ['tp_created','Has a tailored portfolio','portfolio'],
+  ['tp_created','Has a tailored portfolio','portfolio'], // Yes→tp_created:true · No→tailored_portfolios_empty:true (see brValues)
   ['tp_top_up','Topped up / updated tailored portfolio'],
-  ['idle_cash_enabled','Idle cash / Shariah cash is on now'],
-  ['has_ever_enabled_idle_cash','Has ever turned idle cash on'],
-  ['require_interest_cash','Cash-interest rate available (product available)'],
+  ['idle_cash_enabled','Idle cash or Shariah cash is on now'],
+  ['has_ever_enabled_idle_cash','On classic idle cash (now or before)',null,'Classic idle cash only. Always No for Shariah cash users.'],
   ['has_positions','Holds at least one asset','portfolio'],
-  ['tailored_portfolios_empty','Has no tailored portfolio','portfolio'],
-  ['promo_codes_empty','Has no promo code'],
-  ['portfolio_empty','Portfolio empty: no positions and no TP','portfolio-only'],
+  ['has_promo_code','Has a promo code'],
 ];
-const BR_PORT_SCREENS=['Dashboard','Asset page','Portfolio'];
-const brState={screen:'Dashboard',kyc:new Set(),countries:[],age_min:'',age_max:'',trades_min:'',trades_max:'',reward_states:new Set(),bonus_type:'',bools:{}};
-function brResetState(keepScreen){const sc=keepScreen?brState.screen:'Dashboard';brState.screen=sc;brState.kyc=new Set();brState.countries=[];brState.age_min='';brState.age_max='';brState.trades_min='';brState.trades_max='';brState.reward_states=new Set();brState.bonus_type='';brState.bools={};BR_BOOLS.forEach(([k])=>brState.bools[k]='ignore');}
+const brState={screen:'DASHBOARD',kyc:new Set(),countries:[],age_min:'',age_max:'',trades_min:'',trades_max:'',reward_states:new Set(),bonus_type:'',bools:{}};
+function brResetState(keepScreen){const sc=keepScreen?brState.screen:'DASHBOARD';brState.screen=sc;brState.kyc=new Set();brState.countries=[];brState.age_min='';brState.age_max='';brState.trades_min='';brState.trades_max='';brState.reward_states=new Set();brState.bonus_type='';brState.bools={};BR_BOOLS.forEach(([k])=>brState.bools[k]='ignore');}
 brResetState(false);
 
-function brTri(key,label,tag){
+// A field can be locked (forced to Any) by the selected placement or by another field.
+function brFieldLock(key){
+  const scr=brState.screen;
+  if(key==='tp_created'||key==='has_positions'){
+    if(!BR_PORT_SCREENS.includes(scr)) return 'Not checked on this screen — every user would match.';
+  }
+  if(key==='tp_top_up' && brState.bools.tp_created==='false') return 'Set only when “Has a tailored portfolio” is Yes.';
+  return null;
+}
+function brTri(key,label,tag,hint){
+  const lock=brFieldLock(key);
+  if(lock) brState.bools[key]='ignore';
   const v=brState.bools[key]||'ignore';
-  const hint=tag==='portfolio'?' <span class="br-hint">(Dashboard/Asset/Portfolio)</span>':tag==='portfolio-only'?' <span class="br-hint">(Portfolio only)</span>':'';
-  const b=(val,txt)=>`<button type="button" data-val="${val}" class="${v===val?'on-'+val:''}" onclick="brSetBool('${key}','${val}')">${txt}</button>`;
-  return `<div class="br-field br-row"><label class="br-label">${label}${hint}</label><div class="br-tri" data-key="${key}">${b('ignore','Any')}${b('true','Yes')}${b('false','No')}</div></div>`;
+  const b=(val,txt)=> lock
+    ? `<button type="button" disabled class="${val==='ignore'?'on-ignore':''}">${txt}</button>`
+    : `<button type="button" data-val="${val}" class="${v===val?'on-'+val:''}" onclick="brSetBool('${key}','${val}')">${txt}</button>`;
+  const note=lock||(tag==='portfolio'?'Works on Dashboard, Asset page, Portfolio.':hint||'');
+  const noteHtml=note?`<div class="br-lockhint${lock?' locked':''}">${note}</div>`:'';
+  return `<div class="br-field"><div class="br-row"><label class="br-label">${label}</label><div class="br-tri${lock?' br-tri-locked':''}" data-key="${key}">${b('ignore','Any')}${b('true','Yes')}${b('false','No')}</div></div>${noteHtml}</div>`;
 }
 function brRenderControls(){
   const c=document.getElementById('br-controls'); if(!c) return;
@@ -2764,11 +2806,13 @@ function brRenderControls(){
   const rewChips=BR_REWARDS.map(([v,l])=>`<div class="br-chip ${brState.reward_states.has(v)?'on':''}" title="${l}" onclick="brToggleChip('reward','${v}',this)">${v}</div>`).join('');
   const ctags=brState.countries.map((c2,i)=>`<span>${c2}<b onclick="brRemoveCountry(${i})">✕</b></span>`).join('');
   const bonusOpts=['<option value="">— any —</option>'].concat(BR_BONUS.map(([v,l])=>`<option value="${v}" ${brState.bonus_type===v?'selected':''}>${v} — ${l}</option>`)).join('');
-  const scrOpts=BR_SCREENS.map(s=>`<option value="${s}" ${brState.screen===s?'selected':''}>${s}</option>`).join('');
+  const scrOpts=BR_PLACEMENTS.map(([code,lbl])=>`<option value="${code}" ${brState.screen===code?'selected':''}>${lbl}</option>`).join('');
+  const bt=k=>{const f=BR_BOOLS.find(x=>x[0]===k);return brTri(f[0],f[1],f[2],f[3]);};
+  const rewardsBools=['has_positions','has_promo_code'].map(bt).join('');
   c.innerHTML=`
     <div class="br-group">
       <div class="br-group-t">Banner screen</div>
-      <div class="br-field"><label class="br-label">Placement <span class="br-hint">(not part of the JSON — set in the admin panel; drives the warnings)</span></label>
+      <div class="br-field"><label class="br-label">Placement <span class="br-hint">(not part of the JSON — set in the admin panel; controls which fields apply)</span></label>
         <select class="br-sel" onchange="brSetScreen(this.value)">${scrOpts}</select></div>
     </div>
     <div class="br-group">
@@ -2782,7 +2826,7 @@ function brRenderControls(){
     </div>
     <div class="br-group">
       <div class="br-group-t">Onboarding &amp; products</div>
-      ${['rq_completed','deposited','tp_created','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash','require_interest_cash'].map(k=>{const f=BR_BOOLS.find(x=>x[0]===k);return brTri(f[0],f[1],f[2]);}).join('')}
+      ${['rq_completed','deposited','tp_created','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash'].map(bt).join('')}
     </div>
     <div class="br-group">
       <div class="br-group-t">Trading</div>
@@ -2793,14 +2837,19 @@ function brRenderControls(){
       <div class="br-group-t">Rewards, bonuses, portfolio</div>
       <div class="br-field"><label class="br-label">Referral state (reward_states) <span class="br-hint">— one of the selected</span></label><div class="br-chips">${rewChips}</div></div>
       <div class="br-field"><label class="br-label">Current promo (bonus_type)</label><select class="br-sel" onchange="brSetBonus(this.value)">${bonusOpts}</select></div>
-      ${['has_positions','tailored_portfolios_empty','promo_codes_empty','portfolio_empty'].map(k=>{const f=BR_BOOLS.find(x=>x[0]===k);return brTri(f[0],f[1],f[2]);}).join('')}
+      ${rewardsBools}
     </div>`;
   rebuildBanner();
 }
-function brSetScreen(v){brState.screen=v;rebuildBanner();}
+function brSetScreen(v){brState.screen=v;brRenderControls();}
 function brSetBonus(v){brState.bonus_type=v;rebuildBanner();}
 function brNum(key,val){brState[key]=val;rebuildBanner();}
-function brSetBool(key,val){brState.bools[key]=val;const g=document.querySelector('.br-tri[data-key="'+key+'"]');if(g)g.querySelectorAll('button').forEach(b=>b.className=(b.dataset.val===val)?('on-'+val):'');rebuildBanner();}
+function brSetBool(key,val){
+  brState.bools[key]=val;
+  if(key==='tp_created'||key==='portfolio_empty'){ brRenderControls(); return; } // these lock/unlock other fields
+  const g=document.querySelector('.br-tri[data-key="'+key+'"]');if(g)g.querySelectorAll('button').forEach(b=>b.className=(b.dataset.val===val)?('on-'+val):'');
+  rebuildBanner();
+}
 function brToggleChip(kind,val,el){const set=kind==='kyc'?brState.kyc:brState.reward_states;if(set.has(val))set.delete(val);else set.add(val);el.classList.toggle('on',set.has(val));rebuildBanner();}
 function brAddCountry(){const inp=document.getElementById('br-country-inp');if(!inp)return;const v=(inp.value||'').trim().toUpperCase();if(/^[A-Z]{3}$/.test(v)){if(!brState.countries.includes(v))brState.countries.push(v);inp.value='';brRenderControls();document.getElementById('br-country-inp').focus();}else{inp.style.borderColor='#fca5a5';}}
 function brRemoveCountry(i){brState.countries.splice(i,1);brRenderControls();}
@@ -2811,27 +2860,38 @@ function brValues(){
   const num=k=>{const s=brState[k];return s!==''&&s!=null&&!isNaN(+s)?parseInt(s,10):null;};
   const am=num('age_min'),ax=num('age_max'),tm=num('trades_min'),tx=num('trades_max');
   if(am!=null)v.age_min=am; if(ax!=null)v.age_max=ax;
-  BR_BOOLS.forEach(([k])=>{const b=brState.bools[k];if(b==='true')v[k]=true;else if(b==='false')v[k]=false;});
+  // tp_created and has_promo_code are mapped specially below; everything else is direct.
+  BR_BOOLS.forEach(([k])=>{if(k==='has_promo_code'||k==='tp_created')return;const b=brState.bools[k];if(b==='true')v[k]=true;else if(b==='false')v[k]=false;});
+  // "Has a tailored portfolio": Yes → tp_created:true · No → tailored_portfolios_empty:true
+  // (tp_created:false would match everyone; tailored_portfolios_empty:true is the safe "no TP").
+  const tp=brState.bools.tp_created;
+  if(tp==='true')v.tp_created=true; else if(tp==='false')v.tailored_portfolios_empty=true;
+  // "Has a promo code" (Yes/No) → promo_codes_empty inverted.
+  const hp=brState.bools.has_promo_code;
+  if(hp==='true')v.promo_codes_empty=false; else if(hp==='false')v.promo_codes_empty=true;
   if(tm!=null)v.trades_min=tm; if(tx!=null)v.trades_max=tx;
   if(brState.reward_states.size) v.reward_states=[...brState.reward_states];
   if(brState.bonus_type) v.bonus_type=brState.bonus_type;
   return v;
 }
-const BR_ORDER=['kyc_statuses','countries','age_min','age_max','rq_completed','deposited','tp_created','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash','require_interest_cash','trades_min','trades_max','reward_states','bonus_type','promo_codes_empty','has_positions','tailored_portfolios_empty','portfolio_empty'];
+const BR_ORDER=['kyc_statuses','countries','age_min','age_max','rq_completed','deposited','tp_created','tailored_portfolios_empty','tp_top_up','idle_cash_enabled','has_ever_enabled_idle_cash','trades_min','trades_max','reward_states','bonus_type','promo_codes_empty','has_positions'];
+function plDestsFor(code){
+  const idx=BR_DL_PLACEMENTS.indexOf(code);
+  if(idx<0) return [];
+  return BR_DL_MATRIX.filter(([d,cells,special])=>!special&&cells[idx]).map(([d])=>d);
+}
 function brWarnings(v){
   const W=[],scr=brState.screen;
   if('age_min'in v&&v.age_min<0)W.push(['err','Age cannot be negative.']);
   if('age_max'in v&&v.age_max<0)W.push(['err','Age cannot be negative.']);
   if('age_min'in v&&'age_max'in v&&v.age_min>v.age_max)W.push(['err','age_min is greater than age_max — the rule is invalid.']);
-  if('age_min'in v&&v.age_min>0)W.push(['info','Users with no date of birth count as age 0, so age_min also hides them.']);
+  if('age_min'in v&&v.age_min>0)W.push(['info','Users without a date of birth count as age 0 and will be hidden.']);
   if('trades_min'in v&&v.trades_min<0)W.push(['err','trades_min cannot be negative.']);
   if('trades_max'in v&&v.trades_max<0)W.push(['err','trades_max cannot be negative.']);
   if('trades_min'in v&&'trades_max'in v&&v.trades_min>v.trades_max)W.push(['err','trades_min is greater than trades_max — the rule is invalid.']);
   if('trades_min'in v&&v.trades_min>100)W.push(['warn','trades_min above 100 — the app counts at most 100 filled orders, so this never matches.']);
   if(brState.kyc.has('activated')&&(brState.kyc.has('expired')||brState.kyc.has('expired_soon')))W.push(['warn','Don’t combine activated with expired/expired_soon: a user has one status at a time. expired/expired_soon already mean "account open, ID expiring/expired".']);
-  ['tp_created','has_positions','tailored_portfolios_empty'].forEach(k=>{if(k in v&&!BR_PORT_SCREENS.includes(scr))W.push(['warn',k+' only works reliably on Dashboard, Asset page, Portfolio. On the "'+scr+'" screen the app doesn’t check it — it will match the wrong users.']);});
-  if('portfolio_empty'in v&&scr!=='Portfolio')W.push(['warn','portfolio_empty only works on the Portfolio screen. Don’t use it on "'+scr+'".']);
-  if('require_interest_cash'in v&&v.require_interest_cash===false)W.push(['info','require_interest_cash: false is the same as leaving it out (the app ignores it).']);
+  if(scr==='DEPOSIT')W.push(['err','The Deposit screen can’t show any banner (not even Button OFF or an external link). Pick another placement.']);
   if('bonus_type'in v)W.push(['info','bonus_type is compared only against the user’s current promo. In the dashboard_bonus group only the banner whose bonus_type matches is shown.']);
   if(Object.keys(v).length===0)W.push(['info','Empty rule = every logged-in user. Logged-out users never see rules banners — use Audience type = all for them.']);
   return W;
@@ -2843,13 +2903,21 @@ function brExplain(v){
   if(v.countries)P.push('residence country (from KYC) is one of: '+v.countries.join(', '));
   if('age_min'in v)P.push('age ≥ '+v.age_min);
   if('age_max'in v)P.push('age ≤ '+v.age_max);
-  const PH={rq_completed:['finished the risk questionnaire','has NOT finished the risk questionnaire'],deposited:['has deposited','has never deposited'],tp_created:['has a tailored portfolio','has no tailored portfolio'],tp_top_up:['has topped up / updated the tailored portfolio','has not topped up the tailored portfolio'],idle_cash_enabled:['idle cash is on now','idle cash is off'],has_ever_enabled_idle_cash:['has turned idle cash on before','has never turned idle cash on'],require_interest_cash:['cash-interest rate is available','require_interest_cash=false (ignored)'],has_positions:['holds at least one asset','holds no assets'],tailored_portfolios_empty:['has no tailored portfolio','has a tailored portfolio'],promo_codes_empty:['has no promo code','has a promo code'],portfolio_empty:['portfolio is completely empty','portfolio is not empty']};
+  const PH={rq_completed:['finished the risk questionnaire','has NOT finished the risk questionnaire'],deposited:['has deposited','has never deposited'],tp_created:['has a tailored portfolio','has no tailored portfolio'],tp_top_up:['has topped up / updated the tailored portfolio','has not topped up the tailored portfolio'],idle_cash_enabled:['idle cash is on now','idle cash is off'],has_ever_enabled_idle_cash:['has turned idle cash on before','has never turned idle cash on'],has_positions:['holds at least one asset','holds no assets'],tailored_portfolios_empty:['has no tailored portfolio','has a tailored portfolio'],promo_codes_empty:['has no promo code','has a promo code']};
   Object.keys(PH).forEach(k=>{if(k in v)P.push(v[k]?PH[k][0]:PH[k][1]);});
   if('trades_min'in v)P.push('filled trades ≥ '+v.trades_min);
   if('trades_max'in v)P.push('filled trades ≤ '+v.trades_max);
   if(v.reward_states)P.push('referral state is one of: '+v.reward_states.join(', '));
   if('bonus_type'in v)P.push('current promo = '+v.bonus_type);
   return 'Only users who match <b>ALL</b> of these will see the banner:<ul>'+P.map(p=>'<li>'+p+'</li>').join('')+'</ul>';
+}
+function brAllowedDests(){
+  if(brState.screen==='DEPOSIT') return '<ul><li><b>No banners can be shown on the Deposit screen</b> — not even Button OFF or an external link. Choose another placement.</li></ul>';
+  const dests=plDestsFor(brState.screen);
+  const rows=[dests.length?`<b>In-app destinations:</b> ${dests.join(', ')}`:`<b>In-app destinations:</b> <span class="br-muted">none — Button OFF or external link only</span>`];
+  rows.push(`<b>Any placement:</b> Button OFF, or an external http/https link.`);
+  rows.push(`BONUS_DETAILS works only with Action param = BONUS_PERCENT_FROM_FIRST_DEPOSIT_TP.`);
+  return '<ul>'+rows.map(r=>`<li>${r}</li>`).join('')+'</ul>';
 }
 function rebuildBanner(){
   const v=brValues();
@@ -2861,6 +2929,8 @@ function rebuildBanner(){
   const wEl=document.getElementById('br-warnings');
   if(wEl)wEl.innerHTML=W.map(([t,m])=>`<div class="br-warn ${t}"><span class="br-ic">${IC[t]}</span><span>${m}</span></div>`).join('');
   const eEl=document.getElementById('br-explain'); if(eEl)eEl.innerHTML=brExplain(v);
+  const dScr=document.getElementById('br-dests-scr'); if(dScr)dScr.textContent='— '+brScreenLabel(brState.screen);
+  const dEl=document.getElementById('br-dests'); if(dEl)dEl.innerHTML=brAllowedDests();
 }
 function copyBannerJson(btn){
   const txt=document.getElementById('br-json').textContent;
@@ -2874,7 +2944,7 @@ const BR_PRESETS=[
   ['Verified + questionnaire not done + no deposit',()=>{brState.kyc=new Set(['activated']);brState.bools.rq_completed='false';brState.bools.deposited='false';}],
   ['ID expired / expiring',()=>{brState.kyc=new Set(['expired','expired_soon']);}],
   ['UAE, 18+, verified',()=>{brState.kyc=new Set(['activated']);brState.countries=['ARE'];brState.age_min='18';}],
-  ['No trades & no positions (Dashboard)',()=>{brState.screen='Dashboard';brState.trades_max='0';brState.bools.has_positions='false';}],
+  ['No trades & no positions (Dashboard)',()=>{brState.screen='DASHBOARD';brState.trades_max='0';brState.bools.has_positions='false';}],
   ['Invited friend: gift ready',()=>{brState.reward_states=new Set(['INVITEE_BONUS_READY']);}],
 ];
 function brApplyPreset(i){brResetState(false);if(i>=0&&BR_PRESETS[i])BR_PRESETS[i][1]();brRenderControls();}
@@ -2895,27 +2965,27 @@ const BR_DL_MATRIX=[
   ['REWARDS',[1,0,1,0,0,0,0,0,0]],
   ['SELECT_BONUS_STOCK',[1,0,0,0,0,1,0,0,0]],
   ['FINANCE_ADVISOR_CONTACT',[0,1,1,0,0,0,0,1,1]],
-  ['No destination (Show OFF / external link)',[1,1,1,1,1,1,1,1,1],true],
+  ['No destination (Show OFF / external link)',[1,1,1,0,1,1,1,1,1],true],
 ];
 const BR_DL_NOTES=[
   ['Rule',"Applies when the banner's Show button is ON with an in-app destination. If the placement can't open that destination, the app silently hides the banner (no error)."],
   ['Max per placement','At most 10 banners can be in one placement at the same time.'],
-  ['Always allowed','Button OFF, or an external link with a valid http/https address, can be shown on any placement.'],
+  ['Always allowed','Button OFF, or an external link with a valid http/https address, can be shown on any placement except Deposit.'],
   ['Bonus details','Never shown if the Action param is empty.'],
   ['Tailored portfolio buy','Only works on the Tailored portfolio placement. Whether the user has a tailored portfolio is not checked by the backend.'],
-  ['Deposit placement','No in-app destinations. Only banners with the button OFF or an external link.'],
+  ['Deposit placement','No banners can be shown on the Deposit screen — not even Button OFF or an external link.'],
   ['Profile placement','PROFILE means the Personal details section. The main Profile screen is not controlled from the admin panel yet — this is planned for the future.'],
 ];
 function renderDlMatrix(){
   const t=document.getElementById('br-dl-table'); if(!t) return;
   const wbr=s=>s.replace(/_/g,'_<wbr>');
-  const head='<tr><th>Destination</th>'+BR_DL_PLACEMENTS.map(p=>`<th>${wbr(p)}</th>`).join('')+'</tr>';
+  const head='<tr><th>Destination</th>'+BR_DL_PLACEMENTS.map(p=>`<th>${wbr(p)}${p==='DEPOSIT'?'<div class="br-dl-noban">no banners</div>':''}</th>`).join('')+'</tr>';
   const body=BR_DL_MATRIX.map(([dest,cells,special])=>`<tr${special?' class="br-dl-always"':''}><th>${wbr(dest)}</th>`+cells.map(c=>c?'<td class="yes">✓</td>':'<td class="no">–</td>').join('')+'</tr>').join('');
   t.innerHTML=`<table class="br-dl-tbl"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   const n=document.getElementById('br-dl-notes'); if(n)n.innerHTML=BR_DL_NOTES.map(([k,v])=>`<div class="br-dl-note"><b>${k}:</b> ${v}</div>`).join('');
 }
 function setBannerView(v){
-  ['builder','deeplinks','placements'].forEach(k=>{
+  ['builder','deeplinks','placements','explain'].forEach(k=>{
     const view=document.getElementById('bview-'+k), tab=document.getElementById('bvtab-'+k);
     if(view) view.style.display=v===k?'':'none';
     if(tab) tab.classList.toggle('on',v===k);
@@ -2937,11 +3007,67 @@ function renderPlacements(){
   const g=document.getElementById('pl-gallery'); if(!g) return;
   g.innerHTML=BR_PL_INFO.map(([code,name,imgs])=>{
     const phones=imgs.map(f=>`<div class="pl-phone"><div class="pl-phone-scr"><img src="placements/${f}" alt="${code}" loading="lazy" onclick="openPlImg('placements/${f}')"></div></div>`).join('');
-    return `<div class="pl-card"><div class="pl-phones">${phones}</div><div class="pl-meta"><div class="pl-code">${code}</div><div class="pl-name">${name}</div></div></div>`;
+    const banBadge=code==='DEPOSIT'?'<div class="pl-noban">No banners on this screen</div>':'';
+    return `<div class="pl-card"><div class="pl-phones">${phones}</div><div class="pl-meta"><div class="pl-code">${code}</div><div class="pl-name">${name}</div>${banBadge}</div></div>`;
   }).join('');
 }
 function openPlImg(src){const img=document.getElementById('pl-lightbox-img');if(img)img.src=src;document.getElementById('pl-lightbox').classList.add('on');}
 function closePlImg(){document.getElementById('pl-lightbox').classList.remove('on');}
+// ── Explain JSON: paste a rule, get plain language + problems (inverse of the builder) ──
+const BR_EX_FIELDS={
+  kyc_statuses:v=>'verification status is one of: '+(Array.isArray(v)?v.join(', '):v),
+  countries:v=>'residence country (KYC) is one of: '+(Array.isArray(v)?v.join(', '):v),
+  age_min:v=>'age ≥ '+v,
+  age_max:v=>'age ≤ '+v,
+  rq_completed:v=>v?'finished the risk questionnaire':'has NOT finished the risk questionnaire',
+  deposited:v=>v?'has deposited':'has never deposited',
+  tp_created:v=>v?'has a tailored portfolio':'tp_created: false',
+  tailored_portfolios_empty:v=>v?'has no tailored portfolio':'tailored_portfolios_empty: false',
+  tp_top_up:v=>v?'has topped up / updated the tailored portfolio':'has not topped up the tailored portfolio',
+  idle_cash_enabled:v=>v?'idle cash / Shariah cash is on now':'idle cash is off',
+  has_ever_enabled_idle_cash:v=>v?'has had classic idle cash (now or before)':'never had classic idle cash',
+  require_interest_cash:v=>v?'cash-interest rate is available':'require_interest_cash: false (ignored)',
+  has_positions:v=>v?'holds at least one asset':'holds no assets',
+  portfolio_empty:v=>v?'portfolio is completely empty (Portfolio screen only)':'portfolio_empty: false',
+  trades_min:v=>'filled trades ≥ '+v,
+  trades_max:v=>'filled trades ≤ '+v,
+  reward_states:v=>'referral state is one of: '+(Array.isArray(v)?v.join(', '):v),
+  bonus_type:v=>'current promo = '+v,
+  promo_codes_empty:v=>v?'has no promo code':'has a promo code',
+};
+function explainRuleJson(){
+  const inp=document.getElementById('br-ex-input'); if(!inp) return;
+  const expEl=document.getElementById('br-ex-explain'), wEl=document.getElementById('br-ex-warnings');
+  const IC={err:'⛔',warn:'⚠️',info:'ℹ️'};
+  const render=(html,warns)=>{expEl.innerHTML=html;wEl.innerHTML=(warns||[]).map(([t,m])=>`<div class="br-warn ${t}"><span class="br-ic">${IC[t]}</span><span>${m}</span></div>`).join('');};
+  const txt=(inp.value||'').trim();
+  if(!txt){ render('<span class="br-muted">Paste a JSON above to see the explanation.</span>',[]); return; }
+  let o;
+  try{ o=JSON.parse(txt); }
+  catch(e){ render('<span class="br-muted">—</span>',[['err','Not valid JSON — the admin panel would reject it. '+escHtml(e.message)]]); return; }
+  if(typeof o!=='object'||Array.isArray(o)||o===null){ render('',[['err','Expected a JSON object like {"version": 2, …}.']]); return; }
+  const facts=[],warns=[];
+  if(!('version'in o)) warns.push(['warn','No "version" — a rule should start with "version": 2.']);
+  else if(o.version!==2&&o.version!==1) warns.push(['err','version '+JSON.stringify(o.version)+' is rejected — use 2.']);
+  Object.keys(o).forEach(k=>{
+    if(k==='version') return;
+    if(BR_EX_FIELDS[k]){ facts.push(escHtml(BR_EX_FIELDS[k](o[k]))); return; }
+    if(k==='has_tp'){ facts.push(o[k]?'has a tailored portfolio (has_tp = tp_created)':'has_tp: false'); return; }
+    if(k==='deposits_min'){ facts.push('deposits_min = '+escHtml(String(o[k]))); return; }
+    if(k==='deposited_is_null'){ warns.push(['warn','deposited_is_null does not match logged-in users — use deposited instead.']); return; }
+    warns.push(['warn','Unknown field "'+escHtml(k)+'" — the app ignores it.']);
+  });
+  if(o.tp_created===false) warns.push(['warn','tp_created: false matches everyone (the app can’t confirm "no portfolio"). For "no tailored portfolio" use tailored_portfolios_empty: true.']);
+  if(o.has_tp===false) warns.push(['warn','has_tp: false matches everyone — same issue as tp_created: false.']);
+  if(o.tailored_portfolios_empty===false) warns.push(['warn','tailored_portfolios_empty: false has no effect.']);
+  if(typeof o.deposits_min==='number'&&o.deposits_min>=2) warns.push(['warn','deposits_min ≥ 2 never matches — use deposited: true.']);
+  if(Array.isArray(o.reward_states)&&o.reward_states.includes('INVITER_FRIEND_JOINED')) warns.push(['warn','INVITER_FRIEND_JOINED is never assigned — a rule requiring it never shows.']);
+  if(typeof o.age_min==='number'&&typeof o.age_max==='number'&&o.age_min>o.age_max) warns.push(['err','age_min > age_max — the rule matches nobody.']);
+  if(typeof o.trades_min==='number'&&typeof o.trades_max==='number'&&o.trades_min>o.trades_max) warns.push(['err','trades_min > trades_max — matches nobody.']);
+  if(typeof o.trades_min==='number'&&o.trades_min>100) warns.push(['warn','trades_min > 100 never matches (the app counts at most 100 filled orders).']);
+  if(typeof o.age_min==='number'&&o.age_min>0) warns.push(['info','Users without a date of birth count as age 0 and are hidden.']);
+  render(facts.length?('Shows the banner to users who match <b>ALL</b> of:<ul>'+facts.map(f=>'<li>'+f+'</li>').join('')+'</ul>'):'<span class="br-muted">No conditions — every logged-in user matches.</span>', warns);
+}
 renderDlMatrix();
 renderPlacements();
 
